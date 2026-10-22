@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Introduce el correo y la contraseña' },
+        { error: 'Informe o e-mail e a senha de acesso.' },
         { status: 400 }
       );
     }
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Credenciales incorrectas' },
+        { error: 'Credenciais inválidas. Verifique seu e-mail e senha.' },
         { status: 401 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Credenciales incorrectas' },
+        { error: 'Credenciais inválidas. Verifique seu e-mail e senha.' },
         { status: 401 }
       );
     }
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error('Error en /api/auth/login:', err);
     return NextResponse.json(
-      { error: 'Error interno en el inicio de sesión' },
+      { error: 'Erro interno ao realizar login.' },
       { status: 500 }
     );
   }

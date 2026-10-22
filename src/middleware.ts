@@ -13,8 +13,9 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/demo') ||
+    pathname.startsWith('/api/ai') ||
     pathname.startsWith('/api/widget') ||
+    pathname.startsWith('/demo') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||
     pathname === '/favicon.ico'
@@ -24,6 +25,9 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get('atiende_session')?.value;
   if (!token) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
@@ -33,6 +37,9 @@ export async function middleware(req: NextRequest) {
     await jwtVerify(token, SECRET_KEY);
     return NextResponse.next();
   } catch {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Sessão expirada' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }

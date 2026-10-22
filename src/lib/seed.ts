@@ -16,165 +16,158 @@ export async function seedDatabase() {
       data: {
         email: adminEmail,
         passwordHash,
-        name: 'Administrador Atende',
+        name: 'Administrador Andrade Studio',
         role: 'admin'
       }
     });
     console.log(`✅ Administrador criado: ${adminEmail}`);
   }
 
-  // 2. Check or update Business (Clínica Dental Lumen)
+  // 2. Business: Andrade Studio AI
   const existingBusiness = await prisma.business.findFirst();
+  const businessData = {
+    name: 'Andrade Studio AI',
+    activity: 'Desenvolvimento de Sites, Aplicativos Web/Mobile e Automações Inteligentes com IA',
+    address: 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP',
+    phone: '+55 11 98765-4321',
+    website: 'https://andradestudio.ai',
+    agencyName: 'Andrade Studio AI',
+    timeZone: 'America/Sao_Paulo',
+    hoursConfig: {
+      segunda: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },
+      terca: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },
+      quarta: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },
+      quinta: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },
+      sexta: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },
+      sabado: { open: '09:00', close: '13:00', active: false },
+      domingo: { open: 'fechado', active: false }
+    },
+    afterHoursAction: 'continue_booking'
+  };
+
   if (!existingBusiness) {
-    await prisma.business.create({
-      data: {
-        name: 'Clínica Dental Lumen',
-        activity: 'Odontologia integral avançada, estética dental e implantologia',
-        address: 'Av. Paulista, 1578 - Bela Vista, São Paulo - SP',
-        phone: '+55 11 91234-5678',
-        website: 'https://clinicalumen.com.br',
-        agencyName: 'Andrade Studio AI',
-        timeZone: 'America/Sao_Paulo',
-        hoursConfig: {
-          segunda: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          terca: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          quarta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          quinta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          sexta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          sabado: { open: '09:00', close: '13:00', active: false },
-          domingo: { open: 'fechado', active: false }
-        },
-        afterHoursAction: 'continue_booking'
-      }
-    });
-    console.log('✅ Empresa criada: Clínica Dental Lumen');
+    await prisma.business.create({ data: businessData });
+    console.log('✅ Empresa criada: Andrade Studio AI');
   } else {
     await prisma.business.update({
       where: { id: existingBusiness.id },
-      data: {
-        address: 'Av. Paulista, 1578 - Bela Vista, São Paulo - SP',
-        phone: '+55 11 91234-5678',
-        website: 'https://clinicalumen.com.br',
-        timeZone: 'America/Sao_Paulo'
-      }
+      data: businessData
     });
+    console.log('✅ Empresa atualizada: Andrade Studio AI');
   }
 
   // 3. Assistant Config
   const existingConfig = await prisma.assistantConfig.findFirst();
-  const welcomePtBr = 'Olá! Seja bem-vindo à Clínica Dental Lumen ✨ Sou a assistente virtual da equipe do Dr. Carlos. Como posso ajudar com o seu sorriso hoje? Posso tirar dúvidas sobre procedimentos, valores ou agendar sua consulta!';
-  const instructionsPtBr = `Você é a assistente virtual da Clínica Dental Lumen (São Paulo - SP), um centro odontológico de referência.
-Seu objetivo é atender os pacientes por WhatsApp e Web com cordialidade, profissionalismo e rapidez.
-Horário de atendimento: Segunda a Sexta das 9:00 às 14:00 e das 16:00 às 20:00.
-Diretrizes fundamentais:
-1. Seja objetiva, empática e natural, com respostas concisas como em uma conversa real de WhatsApp.
-2. Ao informar valores, forneça sempre os preços base orientativos e esclareça quando for necessária avaliação clínica presencial.
-3. Incentive o agendamento de consultas nos horários disponíveis.
-4. Em caso de dor aguda, hemorragia ou emergência, oriente contato imediato pelo telefone +55 11 91234-5678 e transfira a conversa para um atendente humano.`;
+  const welcomePtBr = 'Olá! Seja bem-vindo à Andrade Studio AI 🚀 Sou o assistente virtual especializado em tecnologia e IA. Posso te apresentar nossos serviços de desenvolvimento de sites, aplicativos e automações com IA, ou agendar uma reunião de diagnóstico com nosso time. Como posso te ajudar hoje?';
+  const instructionsPtBr = `Você é o assistente virtual oficial da Andrade Studio AI (São Paulo - SP), uma agência e estúdio de tecnologia especializado em Inteligência Artificial, desenvolvimento de sites modernos, aplicativos web/mobile sob medida e automações de processos empresariais com IA.
+Seu objetivo é acolher clientes e leads com excelência, entender a necessidade do projeto (site, app, automação de WhatsApp ou integração de IA), esclarecer dúvidas sobre os serviços e agendar uma reunião de diagnóstico online com nossa equipe técnica.
+
+Diretrizes de comunicação:
+1. Tom amigável, consultivo e profissional, com respostas claras e objetivas no formato de conversa de WhatsApp.
+2. Seja transparente quanto à estimativa de investimento e escopo dos serviços, explicando que cada projeto é desenhado sob medida após reunião técnica.
+3. Estimule o cliente a agendar uma sessão de demonstração/briefing nos horários disponíveis.
+4. Identifique o interesse principal do cliente (site, aplicativo, automação ou chatbot de IA) e colete nome e telefone para contato.`;
 
   const neverDoRulesPtBr = [
-    'Nunca fechar diagnósticos médicos nem prescrever medicamentos ou analgésicos.',
-    'Nunca garantir resultados estéticos milagrosos sem avaliação clínica presencial.',
-    'Nunca inventar preços ou promoções fora da tabela oficial.',
-    'Nunca discutir com o paciente; em caso de insatisfação, transferir educadamente para um atendente humano.'
+    'Nunca prometer prazos de entrega milagrosos sem antes realizar o alinhamento técnico do escopo.',
+    'Nunca fechar orçamentos definitivos de software complexo sem validação de requisitos pela equipe de engenharia.',
+    'Nunca divulgar chaves de API, credenciais ou dados confidenciais de outros clientes e projetos.',
+    'Nunca discutir com o cliente; havendo dúvidas complexas ou insatisfação, transferir imediatamente para um especialista humano.'
   ];
 
+  const configData = {
+    name: 'Andrade AI',
+    tone: 'cercano',
+    welcomeMessage: welcomePtBr,
+    instructions: instructionsPtBr,
+    neverDoRules: neverDoRulesPtBr,
+    escalateTriggers: {
+      complaint: true,
+      urgent: true,
+      asksHuman: true,
+      unknownAnswer: true,
+      customRule: 'Cliente relata incidente crítico em sistema em produção ou solicita proposta corporativa customizada'
+    },
+    active: true,
+    modelSelected: 'anthropic/claude-haiku-5.5',
+    safeMode: false
+  };
+
   if (!existingConfig) {
-    await prisma.assistantConfig.create({
-      data: {
-        name: 'Lúcia AI',
-        tone: 'cercano',
-        welcomeMessage: welcomePtBr,
-        instructions: instructionsPtBr,
-        neverDoRules: neverDoRulesPtBr,
-        escalateTriggers: {
-          complaint: true,
-          urgent: true,
-          asksHuman: true,
-          unknownAnswer: true,
-          customRule: 'Paciente relata dor insuportável, sangramento ou trauma recente'
-        },
-        active: true,
-        modelSelected: 'anthropic/claude-haiku-5.5',
-        safeMode: false
-      }
-    });
+    await prisma.assistantConfig.create({ data: configData });
     console.log('✅ Configuração do Assistente criada');
   } else {
     await prisma.assistantConfig.update({
       where: { id: existingConfig.id },
-      data: {
-        welcomeMessage: welcomePtBr,
-        instructions: instructionsPtBr,
-        neverDoRules: neverDoRulesPtBr
-      }
+      data: configData
     });
+    console.log('✅ Configuração do Assistente atualizada');
   }
 
-  // 4. Serviços (8 serviços em R$)
+  // 4. Serviços de IA, Sites, Apps e Automação
   await prisma.service.deleteMany({});
   const services = [
     {
-      name: 'Primeira consulta e avaliação completa',
-      description: 'Check-up bucal completo com raio-x panorâmico digital e plano de tratamento personalizado.',
+      name: 'Reunião de Diagnóstico e Demonstração de IA',
+      description: 'Sessão online de 30 minutos com especialista para mapear oportunidades de automação, criação de site ou app para sua empresa.',
       durationMinutes: 30,
       price: 0.00,
       priceFrom: false,
       requiresTriage: false
     },
     {
-      name: 'Limpeza dental e profilaxia com ultrassom',
-      description: 'Remoção de tártaro com ultrassom, jato de bicarbonato, polimento coronário e aplicação de flúor.',
+      name: 'Criação de Landing Page & Site Institucional com IA',
+      description: 'Design moderno, ultra-rápido, responsivo, otimizado para SEO, integrado a WhatsApp e com assistente de conversão 24h.',
       durationMinutes: 45,
-      price: 220.00,
+      price: 1950.00,
       priceFrom: true,
       requiresTriage: false
     },
     {
-      name: 'Restauração dental estética (resina nanohíbrida)',
-      description: 'Restauração estética de alta resistência na cor exata do esmalte dental.',
-      durationMinutes: 40,
-      price: 250.00,
-      priceFrom: true,
-      requiresTriage: false
-    },
-    {
-      name: 'Tratamento de canal (Endodontia digital)',
-      description: 'Tratamento endodôntico com instrumentação rotatória digital para preservação do dente natural.',
+      name: 'Desenvolvimento de Aplicativo Web Sob Medida (SaaS)',
+      description: 'Sistemas web completos com Next.js, banco de dados em nuvem, controle de usuários, pagamentos e painel administrativo.',
       durationMinutes: 60,
-      price: 650.00,
-      priceFrom: true,
-      requiresTriage: true
-    },
-    {
-      name: 'Clareamento dental a laser & moldeira combinada',
-      description: 'Protocolo de clareamento dental de alta eficácia com tecnologia dessensibilizante.',
-      durationMinutes: 60,
-      price: 980.00,
-      priceFrom: true,
-      requiresTriage: true
-    },
-    {
-      name: 'Ortodontia invisível (Alinhadores transparentes)',
-      description: 'Alinhamento dental sem brackets através de alinhadores transparentes com escaneamento 3D iTero.',
-      durationMinutes: 45,
       price: 4900.00,
       priceFrom: true,
       requiresTriage: true
     },
     {
-      name: 'Implante dentário unitário em titânio Cone Morse',
-      description: 'Substituição definitiva de dente ausente com pino de titânio biocompatível e coroa de porcelana.',
-      durationMinutes: 60,
+      name: 'Agente de IA para WhatsApp & Atendimento Automático',
+      description: 'Implantação de assistente inteligente com Baileys/OpenRouter conectado à agenda do Google Calendar, CRM e disparo de alertas.',
+      durationMinutes: 45,
       price: 2400.00,
       priceFrom: true,
       requiresTriage: true
     },
     {
-      name: 'Atendimento de urgência odontológica',
-      description: 'Consulta prioritária no mesmo dia para alívio imediato de dor aguda ou fratura dental.',
+      name: 'Automação de Processos Empresariais com IA (n8n / Make)',
+      description: 'Conexão e automação de fluxos de trabalho entre CRM, planilhas Google Sheets, e-mails Gmail, Slack e emissão de notas.',
+      durationMinutes: 45,
+      price: 1800.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Desenvolvimento de Aplicativo Mobile (iOS & Android)',
+      description: 'Aplicativo híbrido de alta performance com React Native / Flutter, notificações push e integração a backend em nuvem.',
+      durationMinutes: 60,
+      price: 7800.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Integração de APIs de Inteligência Artificial & LLMs',
+      description: 'Treinamento de RAG (Busca Vetorial) sobre base de conhecimento da empresa com modelos Claude 3.5, GPT-4o ou Llama 3.',
+      durationMinutes: 60,
+      price: 3200.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Suporte Técnico Contínuo & Evolução de Software',
+      description: 'Manutenção proativa mensal, monitoramento de servidores, melhorias contínuas de recursos e acompanhamento de métricas.',
       durationMinutes: 30,
-      price: 180.00,
+      price: 950.00,
       priceFrom: true,
       requiresTriage: false
     }
@@ -183,63 +176,63 @@ Diretrizes fundamentais:
   for (const s of services) {
     await prisma.service.create({ data: s });
   }
-  console.log('✅ 8 Serviços criados em PT-BR');
+  console.log('✅ 8 Serviços criados para IA & Desenvolvimento de Software');
 
-  // 5. Perguntas Frequentes (10 FAQs em PT-BR)
+  // 5. Perguntas Frequentes (FAQs de Tecnologia & IA)
   await prisma.faq.deleteMany({});
   const faqs = [
     {
-      question: 'A primeira consulta de avaliação tem algum custo?',
-      answer: 'Nossa primeira consulta inclui avaliação clínica completa e raio-x panorâmico digital sem custo inicial ou compromisso.'
+      question: 'A reunião de diagnóstico e demonstração é gratuita?',
+      answer: 'Sim! Nossa sessão inicial de 30 minutos é 100% gratuita. Nela entendemos os gargalos do seu negócio e apresentamos uma demonstração prática de como a IA ou um app sob medida podem acelerar suas vendas.'
     },
     {
-      question: 'Quais são as condições de pagamento e parcelamento?',
-      answer: 'Oferecemos parcelamento em até 12x sem juros no cartão de crédito, PIX com 5% de desconto à vista e opções de financiamento próprio.'
+      question: 'Quanto tempo leva para criar um site institucional ou landing page?',
+      answer: 'Landing pages de alta conversão costumam ser entregues em até 5 a 7 dias úteis. Sites institucionais completos com blog e integrações levam em média de 10 a 20 dias.'
     },
     {
-      question: 'A clínica atende por convênio odontológico?',
-      answer: 'Atendemos na modalidade particular e emitimos toda a documentação, recibos e relatórios para você solicitar reembolso junto ao seu plano de saúde.'
+      question: 'Como funciona o assistente de IA para WhatsApp?',
+      answer: 'O agente inteligente é conectado diretamente ao WhatsApp da sua empresa, respondendo dúvidas dos clientes em segundos, qualificando leads, agendando reuniões no Google Calendar e acionando sua equipe humana quando necessário.'
     },
     {
-      question: 'Há estacionamento próximo à clínica?',
-      answer: 'Sim, o edifício conta com serviço de valet com manobrista no local, e temos fácil acesso pela estação de metrô Trianon-Masp.'
+      question: 'Quais tecnologias vocês utilizam no desenvolvimento de aplicativos?',
+      answer: 'Trabalhamos com o que há de mais moderno no mercado: Next.js, React, Node.js, TypeScript, Tailwind CSS, PostgreSQL, Docker e as APIs de ponta da OpenAI, Anthropic e OpenRouter.'
     },
     {
-      question: 'Como faço para agendar um horário com urgência?',
-      answer: 'Casos de dor aguda ou trauma são atendidos no mesmo dia com prioridade. Envie uma mensagem por aqui ou ligue para +55 11 91234-5678.'
+      question: 'Como são divididas as formas de pagamento para novos projetos?',
+      answer: 'Geralmente facilitamos em parcelas por etapas de entrega (ex: entrada + entrega final) ou em até 12x no cartão de crédito corporativo. Também temos planos mensais para suporte e evolução contínua.'
     },
     {
-      question: 'Vocês atendem crianças (Odontopediatria)?',
-      answer: 'Sim! Temos profissionais especializados em odontopediatria com ambiente acolhedor para que as crianças se sintam seguras e tranquilas.'
+      question: 'Eu preciso saber programar para gerenciar o site ou o assistente?',
+      answer: 'Não! Todos os nossos projetos acompanham painéis intuitivos e amigáveis para que qualquer pessoa da sua equipe consiga alterar textos, serviços, fotos e horários sem digitar nenhuma linha de código.'
     },
     {
-      question: 'O procedimento de implante dentário dói?',
-      answer: 'Não, o procedimento é realizado com anestesia local computadorizada e é totalmente indolor. No pós-operatório, as orientações e medicações garantem recuperação suave.'
+      question: 'O que é a automação com IA (n8n / Make / Webhooks)?',
+      answer: 'É a conexão inteligente de ferramentas que sua empresa já usa (planilhas, e-mails, CRM, WhatsApp) para eliminar tarefas manuais e repetitivas, fazendo em segundos o que antes levava horas.'
     },
     {
-      question: 'Quanto tempo dura o tratamento com alinhadores transparentes?',
-      answer: 'Dependendo do caso, varia entre 6 e 18 meses. Na primeira consulta realizamos o escaneamento intraoral para simular o resultado antes de iniciar.'
+      question: 'Vocês realizam contrato com cláusula de confidencialidade (NDA)?',
+      answer: 'Sim, a segurança das suas ideias e dados é prioridade absoluta. Todos os nossos projetos são formalizados com contrato e cláusula de confidencialidade (NDA).'
     },
     {
-      question: 'Posso me alimentar normalmente após fazer uma restauração?',
-      answer: 'Sim! Como utilizamos resinas nanohíbridas fotopolimerizadas com luz LED, o material atinge resistência total imediatamente após o procedimento.'
+      question: 'Após a entrega do projeto, vocês dão garantia e suporte?',
+      answer: 'Sim! Todos os projetos possuem garantia técnica de 30 dias após o lançamento para eventuais correções, além da opção de plano de evolução contínua mensal.'
     },
     {
-      question: 'O clareamento dental causa sensibilidade?',
-      answer: 'Utilizamos fórmulas modernas com agentes dessensibilizantes pré e pós-aplicação para minimizar qualquer desconforto e garantir máxima segurança ao esmalte.'
+      question: 'Como posso dar o primeiro passo para o meu projeto?',
+      answer: 'Basta agendar um horário aqui mesmo com o assistente virtual para batermos um papo rápido e estruturarmos a proposta sob medida!'
     }
   ];
 
   for (const f of faqs) {
     await prisma.faq.create({ data: f });
   }
-  console.log('✅ 10 FAQs criadas em PT-BR');
+  console.log('✅ 10 FAQs criadas para IA e Tecnologia');
 }
 
 if (process.argv[1]?.endsWith('seed.ts')) {
   seedDatabase()
     .then(() => {
-      console.log('🎉 Atualização para PT-BR concluída.');
+      console.log('🎉 Atualização de serviços e negócio de IA concluída.');
       process.exit(0);
     })
     .catch((err) => {
