@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -13,21 +12,20 @@ import {
   Activity, 
   Settings,
   LogOut,
-  Building2,
-  Sparkles
+  Building2
 } from 'lucide-react';
 import NextLink from 'next/link';
 
 const NAV_ITEMS = [
-  { name: 'Resumen', href: '/', icon: LayoutDashboard },
-  { name: 'Comportamiento', href: '/comportamiento', icon: BrainCircuit },
-  { name: 'Conocimiento', href: '/conocimiento', icon: BookOpen },
-  { name: 'Integraciones', href: '/integraciones', icon: Blocks, badge: '6' },
-  { name: 'Canales', href: '/canales', icon: Radio },
-  { name: 'Probar', href: '/probar', icon: Terminal, highlight: true },
-  { name: 'Conversaciones', href: '/conversaciones', icon: MessageSquare, badge: '2' },
-  { name: 'Actividad', href: '/actividad', icon: Activity },
-  { name: 'Ajustes', href: '/ajustes', icon: Settings },
+  { name: 'Resumo', href: '/', icon: LayoutDashboard },
+  { name: 'Comportamento', href: '/comportamiento', icon: BrainCircuit },
+  { name: 'Conhecimento', href: '/conocimiento', icon: BookOpen },
+  { name: 'Integrações', href: '/integraciones', icon: Blocks, badge: '6' },
+  { name: 'Canais', href: '/canales', icon: Radio },
+  { name: 'Testar', href: '/probar', icon: Terminal, highlight: true },
+  { name: 'Conversas', href: '/conversaciones', icon: MessageSquare, badge: '2' },
+  { name: 'Atividade', href: '/actividad', icon: Activity },
+  { name: 'Configurações', href: '/ajustes', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -52,7 +50,7 @@ export function Sidebar() {
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm tracking-tight text-slate-900">Atiende</span>
+                <span className="font-semibold text-sm tracking-tight text-slate-900">Atende</span>
                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">IA</span>
               </div>
               <span className="text-[10px] text-slate-400 font-medium tracking-wide">
@@ -69,7 +67,7 @@ export function Sidebar() {
               <Building2 className="w-4 h-4" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Negocio</span>
+              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Empresa Ativa</span>
               <span className="text-xs font-semibold text-slate-800 truncate">Clínica Dental Lumen</span>
             </div>
           </div>
@@ -106,7 +104,7 @@ export function Sidebar() {
                 )}
                 {item.highlight && !isActive && (
                   <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-200/70 text-amber-900">
-                    Test
+                    Sandbox
                   </span>
                 )}
               </NextLink>
@@ -124,7 +122,7 @@ export function Sidebar() {
           </div>
           <button
             onClick={handleLogout}
-            title="Cerrar sesión"
+            title="Sair da conta"
             className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-white"
           >
             <LogOut className="w-4 h-4" />

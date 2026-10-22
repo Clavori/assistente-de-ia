@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  BookOpen, 
   Plus, 
   Trash2, 
   Edit, 
   Globe, 
-  Download, 
   Save, 
   CheckCircle2, 
   X,
@@ -18,7 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-export default function ConocimientoPage() {
+export default function ConhecimentoPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
 
@@ -92,9 +90,9 @@ export default function ConocimientoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(business)
       });
-      showNotification('Datos del negocio actualizados');
+      showNotification('Dados da empresa atualizados com sucesso!');
     } catch {
-      alert('Error al guardar datos del negocio');
+      alert('Erro ao salvar dados da empresa');
     }
   };
 
@@ -141,14 +139,14 @@ export default function ConocimientoPage() {
     });
 
     setServiceModal(false);
-    showNotification(editingService ? 'Servicio actualizado' : 'Servicio añadido');
+    showNotification(editingService ? 'Serviço atualizado' : 'Novo serviço adicionado');
     loadAll();
   };
 
   const handleDeleteService = async (id: string) => {
-    if (!confirm('¿Deseas eliminar este servicio?')) return;
+    if (!confirm('Deseja realmente remover este serviço da base da IA?')) return;
     await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
-    showNotification('Servicio eliminado');
+    showNotification('Serviço excluído');
     loadAll();
   };
 
@@ -163,14 +161,14 @@ export default function ConocimientoPage() {
     setFaqModal(false);
     setFaqQuestion('');
     setFaqAnswer('');
-    showNotification('Pregunta frecuente añadida');
+    showNotification('Pergunta frequente adicionada');
     loadAll();
   };
 
   const handleDeleteFaq = async (id: string) => {
-    if (!confirm('¿Eliminar esta pregunta frecuente?')) return;
+    if (!confirm('Deseja excluir esta pergunta?')) return;
     await fetch(`/api/faqs?id=${id}`, { method: 'DELETE' });
-    showNotification('Pregunta eliminada');
+    showNotification('Pergunta excluída');
     loadAll();
   };
 
@@ -189,7 +187,7 @@ export default function ConocimientoPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Error al importar desde la web');
+        alert(data.error || 'Erro ao importar do site');
         return;
       }
 
@@ -201,7 +199,7 @@ export default function ConocimientoPage() {
         setSelectedImportFaqs(data.data.faqs.map((_: any, idx: number) => idx));
       }
     } catch {
-      alert('Error al conectar con la web');
+      alert('Erro ao conectar com o site informado');
     } finally {
       setImporting(false);
     }
@@ -210,7 +208,6 @@ export default function ConocimientoPage() {
   const handleSaveImportedItems = async () => {
     if (!importResults) return;
 
-    // Save selected services
     for (const idx of selectedImportServices) {
       const s = importResults.services[idx];
       if (s) {
@@ -229,7 +226,6 @@ export default function ConocimientoPage() {
       }
     }
 
-    // Save selected FAQs
     for (const idx of selectedImportFaqs) {
       const f = importResults.faqs[idx];
       if (f) {
@@ -243,14 +239,14 @@ export default function ConocimientoPage() {
 
     setImportModal(false);
     setImportResults(null);
-    showNotification('Elementos importados guardados en la base de datos');
+    showNotification('Itens importados salvos na base de conhecimento!');
     loadAll();
   };
 
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center text-slate-400 text-sm">
-        Cargando base de conocimiento...
+        Carregando base de conhecimento...
       </div>
     );
   }
@@ -260,9 +256,9 @@ export default function ConocimientoPage() {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Base de Conocimiento</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Base de Conhecimento</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Datos del negocio, catálogo de servicios, precios y preguntas frecuentes que alimentan a la IA.
+            Dados da empresa, catálogo de procedimentos, preços e perguntas frequentes que alimentam a IA.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -271,14 +267,14 @@ export default function ConocimientoPage() {
             className="px-3.5 py-2 rounded-lg bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100/70 text-emerald-800 text-xs font-semibold shadow-2xs flex items-center gap-2 transition-colors"
           >
             <Globe className="w-4 h-4 text-emerald-700" />
-            <span>Importar desde una web</span>
+            <span>Importar de um site</span>
           </button>
           <button
             onClick={openNewService}
             className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center gap-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Nuevo servicio</span>
+            <span>Novo serviço</span>
           </button>
         </div>
       </div>
@@ -290,25 +286,25 @@ export default function ConocimientoPage() {
         </div>
       )}
 
-      {/* Datos del Negocio Card */}
+      {/* Dados do Negocio Card */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <Building2 className="w-4 h-4 text-slate-600" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Datos Principales del Negocio</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Dados Principais da Empresa</h2>
           </div>
           <button
             onClick={saveBusinessData}
             className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Guardar datos</span>
+            <span>Salvar dados</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-1">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Nombre Comercial</label>
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Nome Comercial</label>
             <input
               type="text"
               value={business.name}
@@ -318,7 +314,7 @@ export default function ConocimientoPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Teléfono Principal</label>
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Telefone / WhatsApp</label>
             <input
               type="text"
               value={business.phone}
@@ -328,7 +324,7 @@ export default function ConocimientoPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Sitio Web</label>
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Website Oficial</label>
             <input
               type="text"
               value={business.website || ''}
@@ -338,7 +334,7 @@ export default function ConocimientoPage() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">A qué se dedica (Actividad)</label>
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Atividade / Segmento</label>
             <input
               type="text"
               value={business.activity}
@@ -348,7 +344,7 @@ export default function ConocimientoPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Dirección Física</label>
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Endereço Completo</label>
             <input
               type="text"
               value={business.address || ''}
@@ -359,17 +355,17 @@ export default function ConocimientoPage() {
         </div>
       </div>
 
-      {/* Catálogo de Servicios */}
+      {/* Catálogo de Serviços */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         <div className="p-5 flex items-center justify-between border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-2.5">
             <Clock className="w-4 h-4 text-slate-600" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Catálogo de Servicios y Tratamientos ({services.length})
+              Catálogo de Procedimentos e Serviços ({services.length})
             </h2>
           </div>
           <span className="text-xs text-slate-500">
-            Utilizado por la IA para consultar duración, precios y citar
+            Utilizado pela IA para orçamentos, duração e agendamentos
           </span>
         </div>
 
@@ -377,11 +373,11 @@ export default function ConocimientoPage() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200/60">
-                <th className="py-3 px-4">Servicio</th>
-                <th className="py-3 px-4">Duración</th>
-                <th className="py-3 px-4">Precio Oficial</th>
-                <th className="py-3 px-4">Valoración Previa</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
+                <th className="py-3 px-4">Procedimento</th>
+                <th className="py-3 px-4">Duração</th>
+                <th className="py-3 px-4">Valor Base</th>
+                <th className="py-3 px-4">Avaliação Prévia</th>
+                <th className="py-3 px-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -401,20 +397,20 @@ export default function ConocimientoPage() {
                   <td className="py-3.5 px-4 font-bold text-slate-900">
                     {s.price !== null ? (
                       <span>
-                        {s.priceFrom && <span className="font-normal text-slate-500 text-[10px] mr-1">Desde</span>}
-                        {Number(s.price).toFixed(2)} €
+                        {s.priceFrom && <span className="font-normal text-slate-500 text-[10px] mr-1">A partir de</span>}
+                        R$ {Number(s.price).toFixed(2)}
                       </span>
                     ) : (
-                      <span className="text-slate-400 font-normal">A consultar</span>
+                      <span className="text-slate-400 font-normal">Sob consulta</span>
                     )}
                   </td>
                   <td className="py-3.5 px-4">
                     {s.requiresTriage ? (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
-                        Requiere valoración
+                        Requer avaliação
                       </span>
                     ) : (
-                      <span className="text-slate-400 text-[11px]">Directo</span>
+                      <span className="text-slate-400 text-[11px]">Direto</span>
                     )}
                   </td>
                   <td className="py-3.5 px-4 text-right space-x-1">
@@ -438,13 +434,13 @@ export default function ConocimientoPage() {
         </div>
       </div>
 
-      {/* Preguntas Frecuentes */}
+      {/* Preguntas Frequentes */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <HelpCircle className="w-4 h-4 text-slate-600" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Preguntas Frecuentes ({faqs.length})
+              Perguntas Frequentes ({faqs.length})
             </h2>
           </div>
           <button
@@ -452,7 +448,7 @@ export default function ConocimientoPage() {
             className="text-xs font-semibold text-slate-900 hover:underline flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Añadir FAQ</span>
+            <span>Adicionar FAQ</span>
           </button>
         </div>
 
@@ -474,13 +470,13 @@ export default function ConocimientoPage() {
         </div>
       </div>
 
-      {/* MODAL: Servicio */}
+      {/* MODAL: Serviço */}
       {serviceModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
+                {editingService ? 'Editar Procedimento' : 'Novo Procedimento'}
               </h3>
               <button onClick={() => setServiceModal(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
@@ -488,31 +484,31 @@ export default function ConocimientoPage() {
             </div>
             <form onSubmit={handleSaveService} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre del Servicio</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nome do Procedimento / Serviço</label>
                 <input
                   type="text"
                   required
                   value={srvName}
                   onChange={(e) => setSrvName(e.target.value)}
-                  placeholder="Ej: Limpieza dental con ultrasonidos"
+                  placeholder="Ex: Limpeza e profilaxia dental"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Descripción</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Descrição</label>
                 <textarea
                   rows={2}
                   value={srvDesc}
                   onChange={(e) => setSrvDesc(e.target.value)}
-                  placeholder="Detalles sobre lo que incluye..."
+                  placeholder="Detalhes sobre o que está incluso..."
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Duración (minutos)</label>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Duração (minutos)</label>
                   <input
                     type="number"
                     min="5"
@@ -524,7 +520,7 @@ export default function ConocimientoPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Precio (€)</label>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Valor (R$)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -544,7 +540,7 @@ export default function ConocimientoPage() {
                     onChange={(e) => setSrvPriceFrom(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                   />
-                  <span className="text-xs text-slate-700 font-medium">Precio base ("Desde...")</span>
+                  <span className="text-xs text-slate-700 font-medium">Preço base ("A partir de...")</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -553,7 +549,7 @@ export default function ConocimientoPage() {
                     onChange={(e) => setSrvRequiresTriage(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                   />
-                  <span className="text-xs text-slate-700 font-medium">Requiere valoración clínica previa</span>
+                  <span className="text-xs text-slate-700 font-medium">Requer avaliação clínica prévia</span>
                 </label>
               </div>
 
@@ -569,7 +565,7 @@ export default function ConocimientoPage() {
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold"
                 >
-                  Guardar servicio
+                  Salvar procedimento
                 </button>
               </div>
             </form>
@@ -577,13 +573,13 @@ export default function ConocimientoPage() {
         </div>
       )}
 
-      {/* MODAL: Nueva FAQ */}
+      {/* MODAL: Nova FAQ */}
       {faqModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Nueva Pregunta Frecuente
+                Nova Pergunta Frequente
               </h3>
               <button onClick={() => setFaqModal(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
@@ -591,25 +587,25 @@ export default function ConocimientoPage() {
             </div>
             <form onSubmit={handleSaveFaq} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Pregunta</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Pergunta</label>
                 <input
                   type="text"
                   required
                   value={faqQuestion}
                   onChange={(e) => setFaqQuestion(e.target.value)}
-                  placeholder="¿Aceptáis pago con tarjeta o transferencia?"
+                  placeholder="Ex: Vocês aceitam pagamento com cartão ou PIX?"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Respuesta oficial</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Resposta Oficial</label>
                 <textarea
                   rows={4}
                   required
                   value={faqAnswer}
                   onChange={(e) => setFaqAnswer(e.target.value)}
-                  placeholder="Explicación clara..."
+                  placeholder="Explicação clara e acolhedora..."
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
                 />
               </div>
@@ -626,7 +622,7 @@ export default function ConocimientoPage() {
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold"
                 >
-                  Añadir pregunta
+                  Adicionar pergunta
                 </button>
               </div>
             </form>
@@ -634,7 +630,7 @@ export default function ConocimientoPage() {
         </div>
       )}
 
-      {/* MODAL: Importar desde una Web */}
+      {/* MODAL: Importar de um Site */}
       {importModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 max-w-2xl w-full p-6 shadow-xl space-y-5 max-h-[90vh] overflow-y-auto">
@@ -642,7 +638,7 @@ export default function ConocimientoPage() {
               <div className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  Importar Conocimiento desde una Web
+                  Importar Conhecimento a partir de um Site
                 </h3>
               </div>
               <button onClick={() => setImportModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -651,7 +647,7 @@ export default function ConocimientoPage() {
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed">
-              Pega la URL de la web del negocio. El servidor descargará la página principal y hasta cinco enlaces internos relevantes (servicios, precios, contacto) para extraer y estructurar el catálogo automáticamente.
+              Cole a URL do site da empresa. O servidor fará a leitura da página inicial e de até cinco links internos relevantes (serviços, preços, contato) para extrair e estruturar o catálogo automaticamente.
             </p>
 
             <form onSubmit={handleStartImport} className="flex gap-2">
@@ -660,7 +656,7 @@ export default function ConocimientoPage() {
                 required
                 value={importUrl}
                 onChange={(e) => setImportUrl(e.target.value)}
-                placeholder="https://tudominio.es"
+                placeholder="https://suaempresa.com.br"
                 className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
               />
               <button
@@ -671,12 +667,12 @@ export default function ConocimientoPage() {
                 {importing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Analizando web...</span>
+                    <span>Analisando site...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Escanear y Extraer</span>
+                    <span>Escanear e Extrair</span>
                   </>
                 )}
               </button>
@@ -687,17 +683,17 @@ export default function ConocimientoPage() {
               <div className="space-y-4 pt-3 border-t border-slate-100">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Elementos detectados para guardar
+                    Elementos identificados para salvar
                   </h4>
                   <span className="text-[11px] text-slate-400">
-                    Selecciona los que deseas añadir a tu catálogo
+                    Selecione os que deseja incluir na base
                   </span>
                 </div>
 
                 {/* Services found */}
                 {importResults.services && (
                   <div className="space-y-2">
-                    <span className="text-xs font-semibold text-slate-700 block">Servicios:</span>
+                    <span className="text-xs font-semibold text-slate-700 block">Serviços identificados:</span>
                     <div className="space-y-1.5 max-h-48 overflow-y-auto">
                       {importResults.services.map((s: any, idx: number) => {
                         const isSelected = selectedImportServices.includes(idx);
@@ -721,7 +717,7 @@ export default function ConocimientoPage() {
                                 <span className="text-slate-400 text-[11px] block">{s.description}</span>
                               </div>
                             </div>
-                            <span className="font-bold text-slate-700">{s.price ? `${s.price} €` : 'A consultar'}</span>
+                            <span className="font-bold text-slate-700">{s.price ? `R$ ${s.price}` : 'Sob consulta'}</span>
                           </label>
                         );
                       })}
@@ -732,7 +728,7 @@ export default function ConocimientoPage() {
                 {/* FAQs found */}
                 {importResults.faqs && (
                   <div className="space-y-2 pt-2">
-                    <span className="text-xs font-semibold text-slate-700 block">Preguntas frecuentes:</span>
+                    <span className="text-xs font-semibold text-slate-700 block">Perguntas frequentes:</span>
                     <div className="space-y-1.5 max-h-40 overflow-y-auto">
                       {importResults.faqs.map((f: any, idx: number) => {
                         const isSelected = selectedImportFaqs.includes(idx);
@@ -774,7 +770,7 @@ export default function ConocimientoPage() {
                     onClick={handleSaveImportedItems}
                     className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
                   >
-                    Guardar seleccionados
+                    Salvar selecionados
                   </button>
                 </div>
               </div>

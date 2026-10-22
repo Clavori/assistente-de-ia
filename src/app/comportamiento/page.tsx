@@ -14,7 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 
-export default function ComportamientoPage() {
+export default function ComportamentoPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
@@ -71,7 +71,7 @@ export default function ComportamientoPage() {
           if (b.afterHoursAction) setAfterHoursAction(b.afterHoursAction);
         }
       } catch (err) {
-        console.error('Error cargando comportamiento:', err);
+        console.error('Erro ao carregar comportamento:', err);
       } finally {
         setLoading(false);
       }
@@ -106,10 +106,10 @@ export default function ComportamientoPage() {
         })
       ]);
 
-      setToast('Comportamiento guardado correctamente');
+      setToast('Comportamento salvo com sucesso!');
       setTimeout(() => setToast(''), 3000);
     } catch {
-      alert('Error al guardar los cambios');
+      alert('Erro ao salvar alterações');
     } finally {
       setSaving(false);
     }
@@ -125,35 +125,35 @@ export default function ComportamientoPage() {
     setNeverDoRules(neverDoRules.filter((_, i) => i !== index));
   };
 
-  const fullPromptText = `[PROMPT DEL SISTEMA - VISTA PREVIA DE SÓLO LECTURA]
+  const fullPromptText = `[PROMPT DE SISTEMA - VISUALIZAÇÃO DE SOMENTE LEITURA]
 
-Eres ${name}, asistente virtual del negocio en atención al cliente.
-Tono configurado: ${tone}.
+Você é ${name}, assistente virtual de atendimento ao cliente do negócio.
+Tom de voz configurado: ${tone}.
 
-MENSAJE INICIAL:
+MENSAGEM INICIAL:
 "${welcomeMessage}"
 
-INSTRUCCIONES PRINCIPALES:
+INSTRUÇÕES PRINCIPAIS:
 ${instructions}
 
-LO QUE NUNCA DEBES HACER:
+O QUE NUNCA DEVE FAZER:
 ${neverDoRules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-CUÁNDO DERIVAR A UN HUMANO:
-- Queja del cliente: ${escalateTriggers.complaint ? 'SÍ' : 'NO'}
-- Urgencia médica o prioritaria: ${escalateTriggers.urgent ? 'SÍ' : 'NO'}
-- Pide hablar con una persona: ${escalateTriggers.asksHuman ? 'SÍ' : 'NO'}
-- No sabes la respuesta con seguridad: ${escalateTriggers.unknownAnswer ? 'SÍ' : 'NO'}
-${escalateTriggers.customRule ? `- Regla adicional: ${escalateTriggers.customRule}` : ''}
+QUANDO TRANSFERIR PARA UM HUMANO:
+- Reclamação ou insatisfação: ${escalateTriggers.complaint ? 'SIM' : 'NÃO'}
+- Urgência médica ou crítica: ${escalateTriggers.urgent ? 'SIM' : 'NÃO'}
+- Pede para falar com uma pessoa: ${escalateTriggers.asksHuman ? 'SIM' : 'NÃO'}
+- Não sabe a resposta com certeza: ${escalateTriggers.unknownAnswer ? 'SIM' : 'NÃO'}
+${escalateTriggers.customRule ? `- Regra personalizada: ${escalateTriggers.customRule}` : ''}
 
-POLÍTICA FUERA DE HORARIO:
-${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas en el horario disponible.' : 'Tomar nota del recado y avisar que se contactará en el próximo turno laboral.'}
+POLÍTICA FORA DO HORÁRIO:
+${afterHoursAction === 'continue_booking' ? 'Continuar atendendo e oferecer agendamentos nos horários livres.' : 'Anotar recado e avisar que o time entrará em contato no próximo expediente.'}
 `;
 
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center text-slate-400 text-sm">
-        Cargando configuración de comportamiento...
+        Carregando configurações de comportamento...
       </div>
     );
   }
@@ -163,9 +163,9 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Comportamiento</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Comportamento</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Personalidad, tono de voz, horarios y reglas de derivación de tu asistente.
+            Personalidade, tom de voz, horários e regras de transbordo do seu assistente.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -174,7 +174,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
             className="px-3.5 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs flex items-center gap-2 transition-colors"
           >
             <Eye className="w-4 h-4 text-slate-500" />
-            <span>Ver el prompt completo</span>
+            <span>Ver o prompt completo</span>
           </button>
           <button
             onClick={handleSave}
@@ -182,7 +182,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
             className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center gap-2 transition-colors disabled:opacity-70"
           >
             <Save className="w-4 h-4" />
-            <span>{saving ? 'Guardando...' : 'Guardar cambios'}</span>
+            <span>{saving ? 'Salvando...' : 'Salvar alterações'}</span>
           </button>
         </div>
       </div>
@@ -197,35 +197,35 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
       {/* Grid of Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Identidad y Tono */}
+        {/* Identidade e Tom */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-5">
           <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <Sparkles className="w-4 h-4 text-slate-600" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Identidad y Tono</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Identidade e Tom de Voz</h2>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Nombre del Asistente
+              Nome do Assistente
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-              placeholder="Ej: Lumen AI"
+              placeholder="Ex: Lumen AI"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Tono de Comunicación
+              Tom de Comunicação
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'cercano', label: 'Cercano', desc: 'Cálido y empático' },
-                { id: 'profesional', label: 'Profesional', desc: 'Clínico y pulido' },
-                { id: 'directo', label: 'Directo', desc: 'Ágil y conciso' },
+                { id: 'cercano', label: 'Acolhedor', desc: 'Caloroso e empático' },
+                { id: 'profesional', label: 'Profissional', desc: 'Clínico e polido' },
+                { id: 'directo', label: 'Direto', desc: 'Ágil e objetivo' },
               ].map((t) => (
                 <button
                   key={t.id}
@@ -248,7 +248,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Mensaje de Bienvenida (Primer contacto)
+              Mensagem de Boas-Vindas (Primeiro contato)
             </label>
             <textarea
               rows={4}
@@ -262,25 +262,25 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
           </div>
         </div>
 
-        {/* Cuándo pasar a una persona */}
+        {/* Quando passar a uma pessoa */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-5">
           <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <UserCheck className="w-4 h-4 text-slate-600" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Derivación a una Persona del Equipo
+              Transbordo para Atendente Humano
             </h2>
           </div>
 
           <p className="text-xs text-slate-500 leading-relaxed">
-            Marca las situaciones en las que el asistente debe pausarse y transferir la conversación inmediatamente:
+            Selecione as situações em que a IA deve pausar e transferir o atendimento imediatamente para sua equipe:
           </p>
 
           <div className="space-y-3 pt-1">
             {[
-              { id: 'complaint', label: 'Queja o descontento evidente del cliente' },
-              { id: 'urgent', label: 'Urgencia médica, dolor agudo o incidencia crítica' },
-              { id: 'asksHuman', label: 'El cliente pide expresamente hablar con una persona' },
-              { id: 'unknownAnswer', label: 'El asistente no sabe la respuesta con total seguridad' },
+              { id: 'complaint', label: 'Reclamação ou insatisfação evidente do cliente' },
+              { id: 'urgent', label: 'Urgência médica, dor aguda ou ocorrência crítica' },
+              { id: 'asksHuman', label: 'O cliente pede expressamente para falar com uma pessoa' },
+              { id: 'unknownAnswer', label: 'O assistente não sabe a resposta com total certeza' },
             ].map((item) => (
               <label key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/60 cursor-pointer hover:bg-slate-100/60 transition-colors">
                 <input
@@ -296,28 +296,28 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Regla libre de derivación
+              Regra personalizada de transbordo
             </label>
             <input
               type="text"
               value={escalateTriggers.customRule || ''}
               onChange={(e) => setEscalateTriggers({ ...escalateTriggers, customRule: e.target.value })}
-              placeholder="Ej: Si el paciente menciona hemorragia o traumatismo reciente"
+              placeholder="Ex: Se o cliente mencionar febre alta, sangramento ou trauma recente"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
             />
           </div>
         </div>
 
-        {/* Instrucciones libres */}
+        {/* Instruções livres */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <span className="w-2 h-2 rounded-full bg-slate-800" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Instrucciones del Sistema en Texto Libre
+              Instruções de Sistema em Texto Livre
             </h2>
           </div>
           <p className="text-xs text-slate-500">
-            Describe el rol del asistente, particularidades del negocio y cómo debe desenvolverse en la atención diaria:
+            Descreva o papel do assistente, detalhes do negócio e como ele deve se comportar nas conversas do dia a dia:
           </p>
           <textarea
             rows={6}
@@ -327,12 +327,12 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
           />
         </div>
 
-        {/* Cosas que NUNCA debe hacer */}
+        {/* Coisas que NUNCA deve fazer */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Reglas Estrictas: Lo que NUNCA debe hacer
+              Regras Estritas: O que a IA NUNCA deve fazer
             </h2>
           </div>
 
@@ -342,7 +342,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
               value={newRule}
               onChange={(e) => setNewRule(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addNeverDoRule())}
-              placeholder="Ej: Nunca dar consejos sobre medicamentos o analgésicos..."
+              placeholder="Ex: Nunca receitar remédios, analgésicos ou fechar diagnósticos médicos..."
               className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
             />
             <button
@@ -351,7 +351,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
               className="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Añadir regla</span>
+              <span>Adicionar regra</span>
             </button>
           </div>
 
@@ -374,18 +374,18 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
           </div>
         </div>
 
-        {/* Horarios y Qué contesta fuera de horario */}
+        {/* Horários e Resposta fora de expediente */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 md:col-span-2">
           <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
             <Clock className="w-4 h-4 text-slate-600" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              Horario de Atención y Respuesta Fuera de Horario
+              Horário de Atendimento e Resposta Fora do Expediente
             </h2>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60 space-y-3">
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              ¿Qué contesta el asistente fuera de horario laboral?
+              O que o assistente deve responder fora do horário comercial?
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -399,9 +399,9 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
                   onChange={(e) => setAfterHoursAction(e.target.value)}
                   className="sr-only"
                 />
-                <span className="block text-xs font-bold text-slate-900">Seguir atendiendo y dar cita</span>
+                <span className="block text-xs font-bold text-slate-900">Continuar atendendo e agendar horário</span>
                 <span className="text-[11px] text-slate-500 block mt-1">
-                  El asistente sigue respondiendo dudas y permite agendar citas en los días u horas disponibles.
+                  O assistente continua tirando dúvidas e permite que o cliente reserve horários disponíveis na agenda.
                 </span>
               </label>
 
@@ -416,9 +416,9 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
                   onChange={(e) => setAfterHoursAction(e.target.value)}
                   className="sr-only"
                 />
-                <span className="block text-xs font-bold text-slate-900">Solo tomar el recado</span>
+                <span className="block text-xs font-bold text-slate-900">Apenas anotar o recado</span>
                 <span className="text-[11px] text-slate-500 block mt-1">
-                  Avisa que el negocio está cerrado, pide nombre y consulta, y asegura que le contactarán a primera hora.
+                  Avisa que a empresa está fechada, solicita nome e mensagem, e confirma retorno no início do próximo expediente.
                 </span>
               </label>
             </div>
@@ -427,7 +427,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
 
       </div>
 
-      {/* Modal: Ver prompt completo (sólo lectura) */}
+      {/* Modal: Ver prompt completo (somente leitura) */}
       {showPromptModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 max-w-2xl w-full p-6 shadow-xl space-y-4">
@@ -435,7 +435,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-slate-700" />
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                  Prompt del Sistema (Solo Lectura)
+                  Prompt do Sistema (Somente Leitura)
                 </h3>
               </div>
               <button
@@ -447,7 +447,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
             </div>
 
             <p className="text-xs text-slate-500">
-              Este es el texto exacto consolidado que recibe el modelo de inteligencia artificial antes de responder a cada cliente:
+              Este é o texto exato consolidado que o modelo de inteligência artificial recebe antes de responder a cada mensagem:
             </p>
 
             <pre className="p-4 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
@@ -459,7 +459,7 @@ ${afterHoursAction === 'continue_booking' ? 'Seguir atendiendo y ofrecer citas e
                 onClick={() => setShowPromptModal(false)}
                 className="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800"
               >
-                Cerrar vista previa
+                Fechar visualização
               </button>
             </div>
           </div>

@@ -2,18 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Settings, 
   KeyRound, 
   Cpu, 
   RefreshCw, 
   Search, 
   CheckCircle2, 
   Building, 
-  Users, 
-  Calculator,
-  ShieldCheck,
-  Zap,
-  DollarSign
+  Calculator
 } from 'lucide-react';
 
 export default function AjustesPage() {
@@ -22,7 +17,7 @@ export default function AjustesPage() {
 
   // Business / Agency state
   const [agencyName, setAgencyName] = useState('Andrade Studio AI');
-  const [timeZone, setTimeZone] = useState('Europe/Madrid');
+  const [timeZone, setTimeZone] = useState('America/Sao_Paulo');
 
   // AI Key Status
   const [keyStatus, setKeyStatus] = useState<any>({ configured: false, balance: null });
@@ -32,10 +27,10 @@ export default function AjustesPage() {
   const [loadingModels, setLoadingModels] = useState(false);
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-haiku-5.5');
   const [searchFilter, setSearchFilter] = useState('');
-  const [providerFilter, setProviderFilter] = useState('all'); // all, Gratis, Anthropic, Google, OpenAI
-  const [sortBy, setSortBy] = useState('recommended'); // recommended, price_asc, name
+  const [providerFilter, setProviderFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('recommended');
 
-  // Cost calculation (editable parameters)
+  // Cost calculation
   const [inputTokensPerConv, setInputTokensPerConv] = useState(20000);
   const [outputTokensPerConv, setOutputTokensPerConv] = useState(2000);
 
@@ -54,7 +49,7 @@ export default function AjustesPage() {
 
       if (resBiz.business) {
         setAgencyName(resBiz.business.agencyName || 'Andrade Studio AI');
-        setTimeZone(resBiz.business.timeZone || 'Europe/Madrid');
+        setTimeZone(resBiz.business.timeZone || 'America/Sao_Paulo');
       }
 
       if (resAssistant.assistant?.modelSelected) {
@@ -82,11 +77,11 @@ export default function AjustesPage() {
       const data = await res.json();
       if (data.models) {
         setModels(data.models);
-        setToast('Catálogo de modelos de OpenRouter actualizado');
+        setToast('Catálogo de modelos do OpenRouter atualizado!');
         setTimeout(() => setToast(''), 3000);
       }
     } catch {
-      alert('Error actualizando modelos');
+      alert('Erro ao atualizar catálogo de modelos');
     } finally {
       setLoadingModels(false);
     }
@@ -107,14 +102,13 @@ export default function AjustesPage() {
         })
       ]);
 
-      setToast('Ajustes guardados correctamente');
+      setToast('Configurações salvas com sucesso!');
       setTimeout(() => setToast(''), 3000);
     } catch {
-      alert('Error al guardar ajustes');
+      alert('Erro ao salvar configurações');
     }
   };
 
-  // Filter and sort models
   const filteredModels = models.filter((m) => {
     const query = searchFilter.toLowerCase();
     const matchesSearch = 
@@ -143,7 +137,6 @@ export default function AjustesPage() {
     return a.name.localeCompare(b.name);
   });
 
-  // Calculate estimated cost for 1,000 conversations
   const currentModelObj = models.find((m) => m.id === selectedModel) || {
     rawInputPrice: 0.25,
     rawOutputPrice: 1.25
@@ -157,7 +150,7 @@ export default function AjustesPage() {
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center text-slate-400 text-sm">
-        Cargando ajustes del sistema...
+        Carregando configurações do sistema...
       </div>
     );
   }
@@ -167,16 +160,16 @@ export default function AjustesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Ajustes del Sistema</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Configurações do Sistema</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Motor de Inteligencia Artificial (OpenRouter), marca de la agencia y zona horaria.
+            Motor de Inteligência Artificial (OpenRouter), marca da agência e fuso horário.
           </p>
         </div>
         <button
           onClick={handleSaveSettings}
           className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs flex items-center gap-2 transition-colors"
         >
-          <span>Guardar ajustes</span>
+          <span>Salvar configurações</span>
         </button>
       </div>
 
@@ -187,17 +180,17 @@ export default function AjustesPage() {
         </div>
       )}
 
-      {/* SECCIÓN 1: Modelo de IA & OpenRouter */}
+      {/* SEÇÃO 1: Modelo de IA & OpenRouter */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-6">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <Cpu className="w-5 h-5 text-slate-700" />
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-                Modelo de Inteligencia Artificial (OpenRouter)
+                Modelo de Inteligência Artificial (OpenRouter)
               </h2>
               <span className="text-xs text-slate-400">
-                Solo se muestran modelos que admiten llamadas a herramientas (tools)
+                Apenas modelos que suportam chamadas a ferramentas (tools) são listados
               </span>
             </div>
           </div>
@@ -207,11 +200,11 @@ export default function AjustesPage() {
             className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingModels ? 'animate-spin' : ''}`} />
-            <span>Actualizar catálogo</span>
+            <span>Atualizar catálogo</span>
           </button>
         </div>
 
-        {/* Estado de la clave OpenRouter */}
+        {/* Estado da chave OpenRouter */}
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${keyStatus.configured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -223,24 +216,24 @@ export default function AjustesPage() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   keyStatus.configured ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
-                  {keyStatus.configured ? 'Configurada en servidor' : 'No configurada'}
+                  {keyStatus.configured ? 'Configurada no servidor' : 'Não configurada'}
                 </span>
               </div>
               <span className="text-[11px] text-slate-500">
-                La clave se custodia en variable de entorno <code className="font-mono text-slate-700">OPENROUTER_API_KEY</code> y nunca viaja al navegador.
+                A chave é protegida na variável de ambiente <code className="font-mono text-slate-700">OPENROUTER_API_KEY</code> e nunca é exposta no navegador.
               </span>
             </div>
           </div>
 
           {keyStatus.balance && (
             <div className="text-right pl-4 border-l border-slate-200 shrink-0">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Saldo disponible</span>
+              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Saldo disponível</span>
               <span className="text-sm font-bold text-slate-900">{keyStatus.balance}</span>
             </div>
           )}
         </div>
 
-        {/* Buscador y Filtros Rápidos */}
+        {/* Buscador e Filtros Rápidos */}
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
@@ -249,7 +242,7 @@ export default function AjustesPage() {
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Filtrar por nombre, proveedor (anthropic, openai, gemini) o ID..."
+                placeholder="Filtrar por nome, provedor (anthropic, openai, gemini) ou ID..."
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
               />
             </div>
@@ -258,9 +251,9 @@ export default function AjustesPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-700 font-medium"
             >
-              <option value="recommended">Recomendados primero</option>
-              <option value="price_asc">Ordenar por menor precio</option>
-              <option value="name">Ordenar por nombre</option>
+              <option value="recommended">Recomendados primeiro</option>
+              <option value="price_asc">Menor preço</option>
+              <option value="name">Ordem alfabética</option>
             </select>
           </div>
 
@@ -269,7 +262,7 @@ export default function AjustesPage() {
             <span className="text-[11px] font-semibold text-slate-400 mr-1">Filtros:</span>
             {[
               { id: 'all', label: 'Todos' },
-              { id: 'Gratis', label: 'Gratis' },
+              { id: 'Gratis', label: 'Gratuito' },
               { id: 'Anthropic', label: 'Anthropic' },
               { id: 'Google', label: 'Google' },
               { id: 'OpenAI', label: 'OpenAI' },
@@ -321,14 +314,14 @@ export default function AjustesPage() {
                       )}
                     </div>
                     <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                      Contexto: {(m.contextLength / 1000).toFixed(0)}k tokens • Entrada: {m.inputPricePerM}/M • Salida: {m.outputPricePerM}/M
+                      Contexto: {(m.contextLength / 1000).toFixed(0)}k tokens • Entrada: {m.inputPricePerM}/M • Saída: {m.outputPricePerM}/M
                     </span>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <span className={`text-[11px] font-bold uppercase ${isSelected ? 'text-amber-300' : 'text-slate-400'}`}>
-                    {isSelected ? 'Activo' : 'Seleccionar'}
+                    {isSelected ? 'Ativo' : 'Selecionar'}
                   </span>
                 </div>
               </div>
@@ -336,25 +329,25 @@ export default function AjustesPage() {
           })}
         </div>
 
-        {/* Estimación de coste para 1.000 conversaciones al mes */}
+        {/* Estimativa de custo para 1.000 conversas */}
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/60 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calculator className="w-4 h-4 text-slate-600" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                Estimación de Coste Mensual (1.000 Conversaciones)
+                Estimativa de Custo Mensal (1.000 Conversas)
               </h3>
             </div>
             <div className="text-right">
-              <span className="text-xs text-slate-500">Estimado con modelo actual:</span>
-              <span className="text-base font-bold text-slate-900 block">${costPer1000Convs} USD / mes</span>
+              <span className="text-xs text-slate-500">Estimado com o modelo atual:</span>
+              <span className="text-base font-bold text-slate-900 block">${costPer1000Convs} USD / mês</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Tokens de entrada por conversación:
+                Tokens de entrada por conversa:
               </label>
               <input
                 type="number"
@@ -366,7 +359,7 @@ export default function AjustesPage() {
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Tokens de salida por conversación:
+                Tokens de saída por conversa:
               </label>
               <input
                 type="number"
@@ -380,17 +373,17 @@ export default function AjustesPage() {
         </div>
       </div>
 
-      {/* SECCIÓN 2: Marca de la Agencia & Zona Horaria */}
+      {/* SEÇÃO 2: Marca da Agência & Fuso Horário */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
           <Building className="w-4 h-4 text-slate-600" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Marca y Configuración General</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">Marca e Configuração Geral</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Nombre de la Agencia Instaladora
+              Nome da Agência / Empresa
             </label>
             <input
               type="text"
@@ -400,23 +393,23 @@ export default function AjustesPage() {
               placeholder="Andrade Studio AI"
             />
             <span className="text-[10px] text-slate-400 block mt-1">
-              Aparece en el menú lateral y en la pantalla de inicio de sesión.
+              Exibido no menu lateral e na tela de login.
             </span>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Zona Horaria Oficial
+              Fuso Horário Oficial
             </label>
             <input
               type="text"
               value={timeZone}
               onChange={(e) => setTimeZone(e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-              placeholder="Europe/Madrid"
+              placeholder="America/Sao_Paulo"
             />
             <span className="text-[10px] text-slate-400 block mt-1">
-              Se utiliza para el cálculo de citas y recordatorios en calendario.
+              Utilizado para agendamentos e lembretes de calendário.
             </span>
           </div>
         </div>

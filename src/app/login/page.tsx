@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +24,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Error al iniciar sesión');
+        setError(data.error || 'Erro ao entrar na conta');
         setLoading(false);
         return;
       }
@@ -33,7 +32,7 @@ export default function LoginPage() {
       router.push('/');
       router.refresh();
     } catch {
-      setError('Error de conexión con el servidor');
+      setError('Erro de conexão com o servidor');
       setLoading(false);
     }
   };
@@ -46,14 +45,14 @@ export default function LoginPage() {
             A
           </div>
           <span className="text-2xl font-semibold tracking-tight text-slate-900">
-            Atiende
+            Atende
           </span>
         </div>
         <p className="text-sm text-slate-500 font-medium">
-          Plataforma de Asistente IA para Negocios
+          Plataforma de Assistente de IA para Negócios
         </p>
         <p className="text-xs text-slate-400 mt-1">
-          Desarrollado por <span className="font-semibold text-slate-600">Andrade Studio AI</span>
+          Desenvolvido por <span className="font-semibold text-slate-600">Andrade Studio AI</span>
         </p>
       </div>
 
@@ -68,7 +67,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                Correo electrónico
+                E-mail
               </label>
               <input
                 type="email"
@@ -82,7 +81,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                Contraseña
+                Senha
               </label>
               <input
                 type="password"
@@ -100,13 +99,13 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
               >
-                {loading ? 'Accediendo...' : 'Iniciar sesión'}
+                {loading ? 'Acessando...' : 'Entrar no Painel'}
               </button>
             </div>
 
             <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/60 text-center">
               <span className="text-[11px] text-slate-500 block">
-                Credenciales demo precargadas:
+                Credenciais de teste pré-carregadas:
               </span>
               <span className="text-[11px] font-mono text-slate-700 font-medium">
                 admin@atiende.local / AdminPassword2026!

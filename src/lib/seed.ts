@@ -16,336 +16,234 @@ export async function seedDatabase() {
       data: {
         email: adminEmail,
         passwordHash,
-        name: 'Administrador Atiende',
+        name: 'Administrador Atende',
         role: 'admin'
       }
     });
-    console.log(`✅ Administrador creado: ${adminEmail}`);
+    console.log(`✅ Administrador criado: ${adminEmail}`);
   }
 
-  // 2. Check or create Business (Clínica Dental Lumen)
+  // 2. Check or update Business (Clínica Dental Lumen)
   const existingBusiness = await prisma.business.findFirst();
   if (!existingBusiness) {
     await prisma.business.create({
       data: {
         name: 'Clínica Dental Lumen',
-        activity: 'Odontología integral avanzada, estética dental e implantología',
-        address: 'Calle Serrano 45, 1º Izquierda, 28001 Madrid',
-        phone: '+34 912 345 678',
-        website: 'https://clinicalumen.es',
+        activity: 'Odontologia integral avançada, estética dental e implantologia',
+        address: 'Av. Paulista, 1578 - Bela Vista, São Paulo - SP',
+        phone: '+55 11 91234-5678',
+        website: 'https://clinicalumen.com.br',
         agencyName: 'Andrade Studio AI',
-        timeZone: 'Europe/Madrid',
+        timeZone: 'America/Sao_Paulo',
         hoursConfig: {
-          lunes: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          martes: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          miercoles: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          jueves: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          viernes: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
-          sabado: { open: '10:00', close: '14:00', active: false },
-          domingo: { open: 'cerrado', active: false }
+          segunda: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
+          terca: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
+          quarta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
+          quinta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
+          sexta: { open: '09:00', close: '20:00', lunchBreak: '14:00-16:00', active: true },
+          sabado: { open: '09:00', close: '13:00', active: false },
+          domingo: { open: 'fechado', active: false }
         },
         afterHoursAction: 'continue_booking'
       }
     });
-    console.log('✅ Negocio inicial creado: Clínica Dental Lumen');
+    console.log('✅ Empresa criada: Clínica Dental Lumen');
+  } else {
+    await prisma.business.update({
+      where: { id: existingBusiness.id },
+      data: {
+        address: 'Av. Paulista, 1578 - Bela Vista, São Paulo - SP',
+        phone: '+55 11 91234-5678',
+        website: 'https://clinicalumen.com.br',
+        timeZone: 'America/Sao_Paulo'
+      }
+    });
   }
 
   // 3. Assistant Config
   const existingConfig = await prisma.assistantConfig.findFirst();
+  const welcomePtBr = 'Olá! Seja bem-vindo à Clínica Dental Lumen ✨ Sou a assistente virtual da equipe do Dr. Carlos. Como posso ajudar com o seu sorriso hoje? Posso tirar dúvidas sobre procedimentos, valores ou agendar sua consulta!';
+  const instructionsPtBr = `Você é a assistente virtual da Clínica Dental Lumen (São Paulo - SP), um centro odontológico de referência.
+Seu objetivo é atender os pacientes por WhatsApp e Web com cordialidade, profissionalismo e rapidez.
+Horário de atendimento: Segunda a Sexta das 9:00 às 14:00 e das 16:00 às 20:00.
+Diretrizes fundamentais:
+1. Seja objetiva, empática e natural, com respostas concisas como em uma conversa real de WhatsApp.
+2. Ao informar valores, forneça sempre os preços base orientativos e esclareça quando for necessária avaliação clínica presencial.
+3. Incentive o agendamento de consultas nos horários disponíveis.
+4. Em caso de dor aguda, hemorragia ou emergência, oriente contato imediato pelo telefone +55 11 91234-5678 e transfira a conversa para um atendente humano.`;
+
+  const neverDoRulesPtBr = [
+    'Nunca fechar diagnósticos médicos nem prescrever medicamentos ou analgésicos.',
+    'Nunca garantir resultados estéticos milagrosos sem avaliação clínica presencial.',
+    'Nunca inventar preços ou promoções fora da tabela oficial.',
+    'Nunca discutir com o paciente; em caso de insatisfação, transferir educadamente para um atendente humano.'
+  ];
+
   if (!existingConfig) {
     await prisma.assistantConfig.create({
       data: {
-        name: 'Lumen AI',
+        name: 'Lúcia AI',
         tone: 'cercano',
-        welcomeMessage: '¡Hola! Te damos la bienvenida a Clínica Dental Lumen en Madrid ✨ Soy el asistente virtual del equipo del Dr. Carlos. ¿En qué podemos ayudarte hoy? Puedo informarte sobre nuestros tratamientos, precios orientativos o concertar tu cita.',
-        instructions: `Eres el asistente virtual de la Clínica Dental Lumen (Calle Serrano 45, Madrid), un centro odontológico de referencia en Madrid.
-Tu objetivo es atender a los pacientes por WhatsApp y web con calidez, profesionalidad y precisión.
-Horario: Lunes a Viernes de 9:00 a 14:00 y de 16:00 a 20:00.
-Normas clave:
-1. Sé conciso y natural, con mensajes cortos como en una conversación real de WhatsApp.
-2. Si el paciente pregunta por precios, proporciona los importes base orientativos y aclara si requiere valoración previa.
-3. Propón citas libres dentro de nuestro horario habitual.
-4. Si detectas urgencia severa o dolor agudo, indica que acudan de inmediato o llama al +34 912 345 678 y transfiere la conversación a una persona.`,
-        neverDoRules: [
-          'Nunca diagnosticar enfermedades ni prescribir medicamentos o analgésicos.',
-          'Nunca garantizar resultados estéticos exactos sin revisión clínica previa.',
-          'Nunca inventar precios, promociones o citas fuera de los datos oficiales.',
-          'Nunca discutir con el paciente; en caso de queja o molestia, pasar educadamente a una persona del equipo.'
-        ],
+        welcomeMessage: welcomePtBr,
+        instructions: instructionsPtBr,
+        neverDoRules: neverDoRulesPtBr,
         escalateTriggers: {
           complaint: true,
           urgent: true,
           asksHuman: true,
           unknownAnswer: true,
-          customRule: 'Paciente menciona dolor insoportable, hemorragia o traumatismo dental reciente'
+          customRule: 'Paciente relata dor insuportável, sangramento ou trauma recente'
         },
         active: true,
         modelSelected: 'anthropic/claude-haiku-5.5',
         safeMode: false
       }
     });
-    console.log('✅ Configuración del Asistente creada');
+    console.log('✅ Configuração do Assistente criada');
+  } else {
+    await prisma.assistantConfig.update({
+      where: { id: existingConfig.id },
+      data: {
+        welcomeMessage: welcomePtBr,
+        instructions: instructionsPtBr,
+        neverDoRules: neverDoRulesPtBr
+      }
+    });
   }
 
-  // 4. Servicios (8 servicios con duración, precio y requisitos)
-  const servicesCount = await prisma.service.count();
-  if (servicesCount === 0) {
-    const services = [
-      {
-        name: 'Primera visita y revisión completa',
-        description: 'Revisión bucodental integral con radiografía digital panorámica e informe clínico sin coste inicial.',
-        durationMinutes: 30,
-        price: 0.00,
-        priceFrom: false,
-        requiresTriage: false
-      },
-      {
-        name: 'Higiene dental y profilaxis con ultrasonidos',
-        description: 'Limpieza profunda con ultrasonidos, eliminación de sarro, pulido dental y aplicación de flúor protector.',
-        durationMinutes: 45,
-        price: 55.00,
-        priceFrom: true,
-        requiresTriage: false
-      },
-      {
-        name: 'Empaste dental estético (obturación)',
-        description: 'Restauración estética con composite de alta resistencia nanohíbrido del mismo tono que el esmalte.',
-        durationMinutes: 40,
-        price: 60.00,
-        priceFrom: true,
-        requiresTriage: false
-      },
-      {
-        name: 'Endodoncia unirradicular / multirradicular',
-        description: 'Tratamiento de conductos con instrumentación rotatoria digital para salvar la pieza dental natural.',
-        durationMinutes: 60,
-        price: 140.00,
-        priceFrom: true,
-        requiresTriage: true
-      },
-      {
-        name: 'Blanqueamiento dental combinado (clínica + férulas)',
-        description: 'Tratamiento estético de alta eficacia con lámpara LED en clínica y refuerzo ambulatorio en casa.',
-        durationMinutes: 60,
-        price: 290.00,
-        priceFrom: true,
-        requiresTriage: true
-      },
-      {
-        name: 'Ortodoncia invisible (Invisalign / Spark)',
-        description: 'Alineación dental sin brackets mediante férulas transparentes. Planificación digital 3D iTero.',
-        durationMinutes: 45,
-        price: 2100.00,
-        priceFrom: true,
-        requiresTriage: true
-      },
-      {
-        name: 'Implante dental de titanio de alta gama',
-        description: 'Reposición de pieza dental fija con titanio grado médico osteointegrable y corona cerámica.',
-        durationMinutes: 60,
-        price: 750.00,
-        priceFrom: true,
-        requiresTriage: true
-      },
-      {
-        name: 'Atención de urgencia dental',
-        description: 'Cita prioritaria el mismo día para alivio del dolor agudo, flemones, roturas o traumatismos.',
-        durationMinutes: 30,
-        price: 45.00,
-        priceFrom: true,
-        requiresTriage: false
-      }
-    ];
-
-    for (const s of services) {
-      await prisma.service.create({ data: s });
+  // 4. Serviços (8 serviços em R$)
+  await prisma.service.deleteMany({});
+  const services = [
+    {
+      name: 'Primeira consulta e avaliação completa',
+      description: 'Check-up bucal completo com raio-x panorâmico digital e plano de tratamento personalizado.',
+      durationMinutes: 30,
+      price: 0.00,
+      priceFrom: false,
+      requiresTriage: false
+    },
+    {
+      name: 'Limpeza dental e profilaxia com ultrassom',
+      description: 'Remoção de tártaro com ultrassom, jato de bicarbonato, polimento coronário e aplicação de flúor.',
+      durationMinutes: 45,
+      price: 220.00,
+      priceFrom: true,
+      requiresTriage: false
+    },
+    {
+      name: 'Restauração dental estética (resina nanohíbrida)',
+      description: 'Restauração estética de alta resistência na cor exata do esmalte dental.',
+      durationMinutes: 40,
+      price: 250.00,
+      priceFrom: true,
+      requiresTriage: false
+    },
+    {
+      name: 'Tratamento de canal (Endodontia digital)',
+      description: 'Tratamento endodôntico com instrumentação rotatória digital para preservação do dente natural.',
+      durationMinutes: 60,
+      price: 650.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Clareamento dental a laser & moldeira combinada',
+      description: 'Protocolo de clareamento dental de alta eficácia com tecnologia dessensibilizante.',
+      durationMinutes: 60,
+      price: 980.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Ortodontia invisível (Alinhadores transparentes)',
+      description: 'Alinhamento dental sem brackets através de alinhadores transparentes com escaneamento 3D iTero.',
+      durationMinutes: 45,
+      price: 4900.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Implante dentário unitário em titânio Cone Morse',
+      description: 'Substituição definitiva de dente ausente com pino de titânio biocompatível e coroa de porcelana.',
+      durationMinutes: 60,
+      price: 2400.00,
+      priceFrom: true,
+      requiresTriage: true
+    },
+    {
+      name: 'Atendimento de urgência odontológica',
+      description: 'Consulta prioritária no mesmo dia para alívio imediato de dor aguda ou fratura dental.',
+      durationMinutes: 30,
+      price: 180.00,
+      priceFrom: true,
+      requiresTriage: false
     }
-    console.log('✅ 8 Servicios creados');
+  ];
+
+  for (const s of services) {
+    await prisma.service.create({ data: s });
   }
+  console.log('✅ 8 Serviços criados em PT-BR');
 
-  // 5. Preguntas Frecuentes (10 FAQs)
-  const faqsCount = await prisma.faq.count();
-  if (faqsCount === 0) {
-    const faqs = [
-      {
-        question: '¿La primera consulta y revisión son gratuitas?',
-        answer: 'Sí, la primera consulta incluye exploración bucodental completa y radiografía digital de diagnóstico sin coste ni compromiso.'
-      },
-      {
-        question: '¿Ofrecéis facilidades o financiación en los tratamientos?',
-        answer: 'Disponemos de financiación a medida de hasta 24 meses sin intereses con aprobación inmediata en clínica, o hasta 60 meses en cuotas cómodas.'
-      },
-      {
-        question: '¿Trabajáis con seguros médicos o pólizas dentales?',
-        answer: 'Trabajamos con las principales aseguradoras (Sanitas, Adeslas, Asisa, Mapfre) para tarifas concertadas y reembolso de pólizas dentales.'
-      },
-      {
-        question: '¿Hay aparcamiento cerca de la clínica?',
-        answer: 'Sí, hay un parking público a menos de 50 metros en la calle Serrano 48, y la estación de Metro Rubén Darío (Línea 5) está a 3 minutos a pie.'
-      },
-      {
-        question: '¿Cómo puedo llegar en transporte público?',
-        answer: 'Estamos muy bien comunicados: Metro Serrano (Línea 4) y Rubén Darío (Línea 5), y líneas de autobús EMT 9, 14, 19, 27 y 51.'
-      },
-      {
-        question: '¿Atendéis a niños y odontopediatría?',
-        answer: 'Sí, contamos con un área especializada en odontopediatría con un entorno adaptado para que los más pequeños se sientan cómodos y tranquilos.'
-      },
-      {
-        question: '¿Qué debo hacer si tengo una urgencia con dolor intenso?',
-        answer: 'Te atendemos de forma prioritaria el mismo día. Escríbenos por aquí o llámanos directamente al +34 912 345 678 para asignarte un hueco de urgencia de inmediato.'
-      },
-      {
-        question: '¿El tratamiento de implantes dentales duele?',
-        answer: 'No, se realiza con anestesia local de última generación y es un procedimiento totalmente indoloro. En el postoperatorio se prescriben pautas analgésicas muy sencillas.'
-      },
-      {
-        question: '¿Cuánto dura el tratamiento con alineadores invisibles?',
-        answer: 'Dependiendo de la complejidad de cada caso, suele durar entre 6 y 18 meses. En la primera cita realizamos un escaneado 3D para mostrarte el resultado final antes de empezar.'
-      },
-      {
-        question: '¿Puedo comer con normalidad después de un empaste?',
-        answer: 'Sí, al utilizar composites fotopolimerizados con luz LED, el material queda completamente endurecido al terminar la cita. Solo recomendamos esperar a que pase el efecto de la anestesia.'
-      }
-    ];
-
-    for (const f of faqs) {
-      await prisma.faq.create({ data: f });
+  // 5. Perguntas Frequentes (10 FAQs em PT-BR)
+  await prisma.faq.deleteMany({});
+  const faqs = [
+    {
+      question: 'A primeira consulta de avaliação tem algum custo?',
+      answer: 'Nossa primeira consulta inclui avaliação clínica completa e raio-x panorâmico digital sem custo inicial ou compromisso.'
+    },
+    {
+      question: 'Quais são as condições de pagamento e parcelamento?',
+      answer: 'Oferecemos parcelamento em até 12x sem juros no cartão de crédito, PIX com 5% de desconto à vista e opções de financiamento próprio.'
+    },
+    {
+      question: 'A clínica atende por convênio odontológico?',
+      answer: 'Atendemos na modalidade particular e emitimos toda a documentação, recibos e relatórios para você solicitar reembolso junto ao seu plano de saúde.'
+    },
+    {
+      question: 'Há estacionamento próximo à clínica?',
+      answer: 'Sim, o edifício conta com serviço de valet com manobrista no local, e temos fácil acesso pela estação de metrô Trianon-Masp.'
+    },
+    {
+      question: 'Como faço para agendar um horário com urgência?',
+      answer: 'Casos de dor aguda ou trauma são atendidos no mesmo dia com prioridade. Envie uma mensagem por aqui ou ligue para +55 11 91234-5678.'
+    },
+    {
+      question: 'Vocês atendem crianças (Odontopediatria)?',
+      answer: 'Sim! Temos profissionais especializados em odontopediatria com ambiente acolhedor para que as crianças se sintam seguras e tranquilas.'
+    },
+    {
+      question: 'O procedimento de implante dentário dói?',
+      answer: 'Não, o procedimento é realizado com anestesia local computadorizada e é totalmente indolor. No pós-operatório, as orientações e medicações garantem recuperação suave.'
+    },
+    {
+      question: 'Quanto tempo dura o tratamento com alinhadores transparentes?',
+      answer: 'Dependendo do caso, varia entre 6 e 18 meses. Na primeira consulta realizamos o escaneamento intraoral para simular o resultado antes de iniciar.'
+    },
+    {
+      question: 'Posso me alimentar normalmente após fazer uma restauração?',
+      answer: 'Sim! Como utilizamos resinas nanohíbridas fotopolimerizadas com luz LED, o material atinge resistência total imediatamente após o procedimento.'
+    },
+    {
+      question: 'O clareamento dental causa sensibilidade?',
+      answer: 'Utilizamos fórmulas modernas com agentes dessensibilizantes pré e pós-aplicação para minimizar qualquer desconforto e garantir máxima segurança ao esmalte.'
     }
-    console.log('✅ 10 Preguntas Frecuentes creadas');
+  ];
+
+  for (const f of faqs) {
+    await prisma.faq.create({ data: f });
   }
-
-  // 6. Integraciones (6 tarjetas desconectadas)
-  const integrationsCount = await prisma.integration.count();
-  if (integrationsCount === 0) {
-    const integrations = [
-      {
-        provider: 'google_calendar',
-        status: 'disconnected',
-        settings: { defaultDuration: 30, bufferMinutes: 10, maxDaysInAdvance: 30 }
-      },
-      {
-        provider: 'gmail',
-        status: 'disconnected',
-        settings: { sendConfirmation: true, dailyDigestTime: '20:00' }
-      },
-      {
-        provider: 'google_sheets',
-        status: 'disconnected',
-        settings: { sheetTitle: 'Contactos — Clínica Dental Lumen' }
-      },
-      {
-        provider: 'slack',
-        status: 'disconnected',
-        settings: { notifyHandover: true, notifyBooking: true }
-      },
-      {
-        provider: 'stripe',
-        status: 'disconnected',
-        settings: { defaultDeposit: 30, testMode: true }
-      },
-      {
-        provider: 'webhooks',
-        status: 'disconnected',
-        settings: { events: ['conversation.new', 'appointment.created', 'handover.requested'] }
-      }
-    ];
-
-    for (const it of integrations) {
-      await prisma.integration.create({ data: it });
-    }
-    console.log('✅ 6 Integraciones preparadas (desconectadas)');
-  }
-
-  // 7. Conversaciones y Contactos de ejemplo en bandeja
-  const contactsCount = await prisma.contact.count();
-  if (contactsCount === 0) {
-    const contact1 = await prisma.contact.create({
-      data: {
-        name: 'Laura Gómez',
-        phone: '+34 654 112 233',
-        channel: 'whatsapp',
-        interest: 'Ortodoncia invisible'
-      }
-    });
-
-    const conv1 = await prisma.conversation.create({
-      data: {
-        channel: 'whatsapp',
-        remoteId: '+34 654 112 233',
-        status: 'bot_active',
-        needsHuman: false,
-        contactId: contact1.id
-      }
-    });
-
-    await prisma.message.createMany({
-      data: [
-        {
-          conversationId: conv1.id,
-          sender: 'customer',
-          text: 'Buenas tardes, quería pedir información sobre la ortodoncia invisible y los precios'
-        },
-        {
-          conversationId: conv1.id,
-          sender: 'assistant',
-          text: '¡Hola Laura! Encantado de saludarte. En Clínica Dental Lumen trabajamos con alineadores transparentes de última generación. El tratamiento tiene un precio a partir de 2.100 €, con posibilidad de financiarlo hasta en 24 meses sin intereses. Para darte un presupuesto exacto y simular tu sonrisa en 3D realizamos una primera visita completa con escáner iTero gratuita. ¿Te gustaría que te reserve cita esta semana?'
-        },
-        {
-          conversationId: conv1.id,
-          sender: 'customer',
-          text: 'Sí, por favor. ¿Qué horarios tenéis el jueves por la tarde?'
-        }
-      ]
-    });
-
-    const contact2 = await prisma.contact.create({
-      data: {
-        name: 'Javier Morales',
-        phone: '+34 612 998 877',
-        channel: 'whatsapp',
-        interest: 'Urgencia dolor agudo'
-      }
-    });
-
-    const conv2 = await prisma.conversation.create({
-      data: {
-        channel: 'whatsapp',
-        remoteId: '+34 612 998 877',
-        status: 'human_takeover',
-        needsHuman: true,
-        contactId: contact2.id
-      }
-    });
-
-    await prisma.message.createMany({
-      data: [
-        {
-          conversationId: conv2.id,
-          sender: 'customer',
-          text: 'Hola, tengo un dolor insoportable en una muela desde anoche y no puedo comer. ¿Tenéis hueco hoy urgente?'
-        },
-        {
-          conversationId: conv2.id,
-          sender: 'assistant',
-          text: 'Hola Javier, lamento mucho el dolor. Al tratarse de una urgencia prioritaria, estoy avisando a nuestro equipo clínico para atenderte hoy mismo. Nuestro teléfono directo es el +34 912 345 678. Un compañero del equipo tomará esta conversación en unos instantes.'
-        }
-      ]
-    });
-
-    console.log('✅ Contactos y conversaciones de ejemplo creados');
-  }
+  console.log('✅ 10 FAQs criadas em PT-BR');
 }
 
-// Run directly when executed
 if (process.argv[1]?.endsWith('seed.ts')) {
   seedDatabase()
     .then(() => {
-      console.log('🎉 Seed completado con éxito.');
+      console.log('🎉 Atualização para PT-BR concluída.');
       process.exit(0);
     })
     .catch((err) => {
-      console.error('Error al ejecutar seed:', err);
+      console.error('Erro ao atualizar seed:', err);
       process.exit(1);
     });
 }
