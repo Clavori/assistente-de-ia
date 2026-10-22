@@ -19,30 +19,30 @@ model User {
 
 model Business {
   id               String   @id @default(cuid())
-  name             String   @default("Clínica Dental Lumen")
-  activity         String   @default("Clínica odontológica integral y estética dental")
-  address          String?  @default("Calle Serrano 45, 1º Izquierda, 28001 Madrid")
-  phone            String   @default("+34 912 345 678")
-  website          String?  @default("https://clinicalumen.es")
-  hoursConfig      Json?    // Horario por días de la semana
+  name             String   @default("Andrade Studio AI")
+  activity         String   @default("Desenvolvimento de Sites, Aplicativos Web/Mobile e Automações Inteligentes com IA")
+  address          String?  @default("Av. Paulista, 1000 - Bela Vista, São Paulo - SP")
+  phone            String   @default("+55 11 98765-4321")
+  website          String?  @default("https://andradestudio.ai")
+  hoursConfig      Json?    // Horario por dias da semana
   afterHoursAction String   @default("continue_booking") // continue_booking | take_message
   agencyName       String   @default("Andrade Studio AI")
   agencyLogo       String?
-  timeZone         String   @default("Europe/Madrid")
+  timeZone         String   @default("America/Sao_Paulo")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
 
 model AssistantConfig {
   id               String   @id @default(cuid())
-  name             String   @default("Lumen AI")
+  name             String   @default("Andrade AI")
   avatar           String?
-  tone             String   @default("cercano") // cercano, profesional, directo
-  welcomeMessage   String   @default("¡Hola! Soy el asistente virtual de Clínica Dental Lumen. ¿En qué puedo ayudarte hoy? Puedo informarte sobre nuestros tratamientos o darte cita con el equipo.")
+  tone             String   @default("cercano") // cercano, profissional, direto
+  welcomeMessage   String   @default("Olá! Seja bem-vindo à Andrade Studio AI 🚀 Sou o assistente virtual especializado em tecnologia e IA.")
   instructions     String   @db.Text
-  neverDoRules     Json?    // Array de cosas que nunca debe hacer
+  neverDoRules     Json?    // Array de coisas que nunca deve fazer
   escalateTriggers Json?    // { complaint: true, urgent: true, asksHuman: true, unknownAnswer: true, customRule: "" }
-  active           Boolean  @default(true) // Interruptor general: Asistente encendido / en pausa
+  active           Boolean  @default(true) // Interruptor geral: Assistente ativo / pausado
   modelSelected    String   @default("anthropic/claude-haiku-5.5")
   safeMode         Boolean  @default(false)
   updatedAt        DateTime @updatedAt
@@ -54,8 +54,8 @@ model Service {
   description     String?  @db.Text
   durationMinutes Int      @default(30)
   price           Decimal? @db.Decimal(10, 2)
-  priceFrom       Boolean  @default(false) // "desde"
-  requiresTriage  Boolean  @default(false) // "requiere valoración previa"
+  priceFrom       Boolean  @default(false) // "a partir de"
+  requiresTriage  Boolean  @default(false) // "requer avaliação prévia"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -70,22 +70,22 @@ model Faq {
 
 model KnowledgeNote {
   id        String   @id @default(cuid())
-  title     String   @default("Información adicional")
+  title     String   @default("Informações adicionais")
   content   String   @db.Text
   updatedAt DateTime @updatedAt
 }
 
 model Integration {
-  id             String   @id @default(cuid())
-  provider       String   @unique // google_calendar, gmail, google_sheets, slack, stripe, webhooks
-  status         String   @default("disconnected") // disconnected, connected, error
+  id             String    @id @default(cuid())
+  provider       String    @unique // google_calendar, gmail, google_sheets, slack, stripe, webhooks
+  status         String    @default("disconnected") // disconnected, connected, error
   accountEmail   String?
-  encryptedData  String?  @db.Text // AES-256-GCM tokens & secrets
-  settings       Json?    // Configuración específica
-  allowedTools   Json?    // Array de herramientas habilitadas para la IA
+  encryptedData  String?   @db.Text // AES-256-GCM tokens & secrets
+  settings       Json?     // Configurações específicas
+  allowedTools   Json?     // Array de ferramentas habilitadas para a IA
   errorMessage   String?
   lastSyncAt     DateTime?
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime  @updatedAt
 }
 
 model Contact {
@@ -106,7 +106,7 @@ model Contact {
 model Conversation {
   id            String    @id @default(cuid())
   channel       String    // whatsapp, web
-  remoteId      String    // Número de teléfono o token de sesión web
+  remoteId      String    // Número de telefone ou token de sessão web
   status        String    @default("bot_active") // bot_active, human_takeover, closed
   needsHuman    Boolean   @default(false)
   contactId     String?
@@ -122,23 +122,23 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         String       // customer, assistant, agent
   text           String       @db.Text
-  toolsUsed      Json?        // Registro de herramientas llamadas en este turno
+  toolsUsed      Json?        // Registro de ferramentas chamadas neste turno
   createdAt      DateTime     @default(now())
 }
 
 model Appointment {
-  id                 String   @id @default(cuid())
-  contactId          String
-  contact            Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  serviceName        String
-  startsAt           DateTime
-  endsAt             DateTime
-  status             String   @default("confirmed") // confirmed, cancelled
+  id                    String   @id @default(cuid())
+  contactId             String
+  contact               Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  serviceName           String
+  startsAt              DateTime
+  endsAt                DateTime
+  status                String   @default("confirmed") // confirmed, cancelled
   googleCalendarEventId String?
-  reminderSent       Boolean  @default(false)
-  createdByAssistant Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  reminderSent          Boolean  @default(false)
+  createdByAssistant    Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model ActivityLog {
@@ -149,4 +149,31 @@ model ActivityLog {
   details     Json?
   result      String   @default("success") // success, error
   createdAt   DateTime @default(now())
+}
+
+model WhatsAppConnection {
+  id              String    @id @default("default")
+  status          String    @default("disconnected") // disconnected, waiting_qr, connected, error
+  qrCode          String?   @db.Text
+  connectedNumber String?
+  lastActiveAt    DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+model WorkerCommand {
+  id        String   @id @default(cuid())
+  command   String   // start, stop, disconnect, restart
+  payload   Json?
+  status    String   @default("pending") // pending, executed, failed
+  createdAt DateTime @default(now())
+}
+
+model WebChatConfig {
+  id             String   @id @default("default")
+  enabled        Boolean  @default(true)
+  primaryColor   String   @default("#059669")
+  welcomeMessage String   @default("Olá! Como posso ajudar seu projeto hoje?")
+  botName        String   @default("Andrade AI")
+  position       String   @default("bottom-right")
+  updatedAt      DateTime @updatedAt
 }
