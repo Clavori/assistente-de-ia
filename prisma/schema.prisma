@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin") // admin, member
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Business {
+  id               String   @id @default(cuid())
+  name             String   @default("Clínica Dental Lumen")
+  activity         String   @default("Clínica odontológica integral y estética dental")
+  address          String?  @default("Calle Serrano 45, 1º Izquierda, 28001 Madrid")
+  phone            String   @default("+34 912 345 678")
+  website          String?  @default("https://clinicalumen.es")
+  hoursConfig      Json?    // Horario por días de la semana
+  afterHoursAction String   @default("continue_booking") // continue_booking | take_message
+  agencyName       String   @default("Andrade Studio AI")
+  agencyLogo       String?
+  timeZone         String   @default("Europe/Madrid")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model AssistantConfig {
+  id               String   @id @default(cuid())
+  name             String   @default("Lumen AI")
+  avatar           String?
+  tone             String   @default("cercano") // cercano, profesional, directo
+  welcomeMessage   String   @default("¡Hola! Soy el asistente virtual de Clínica Dental Lumen. ¿En qué puedo ayudarte hoy? Puedo informarte sobre nuestros tratamientos o darte cita con el equipo.")
+  instructions     String   @db.Text
+  neverDoRules     Json?    // Array de cosas que nunca debe hacer
+  escalateTriggers Json?    // { complaint: true, urgent: true, asksHuman: true, unknownAnswer: true, customRule: "" }
+  active           Boolean  @default(true) // Interruptor general: Asistente encendido / en pausa
+  modelSelected    String   @default("anthropic/claude-haiku-5.5")
+  safeMode         Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  durationMinutes Int      @default(30)
+  price           Decimal? @db.Decimal(10, 2)
+  priceFrom       Boolean  @default(false) // "desde"
+  requiresTriage  Boolean  @default(false) // "requiere valoración previa"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  answer    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KnowledgeNote {
+  id        String   @id @default(cuid())
+  title     String   @default("Información adicional")
+  content   String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Integration {
+  id             String   @id @default(cuid())
+  provider       String   @unique // google_calendar, gmail, google_sheets, slack, stripe, webhooks
+  status         String   @default("disconnected") // disconnected, connected, error
+  accountEmail   String?
+  encryptedData  String?  @db.Text // AES-256-GCM tokens & secrets
+  settings       Json?    // Configuración específica
+  allowedTools   Json?    // Array de herramientas habilitadas para la IA
+  errorMessage   String?
+  lastSyncAt     DateTime?
+  updatedAt      DateTime @updatedAt
+}
+
+model Contact {
+  id            String         @id @default(cuid())
+  name          String
+  phone         String?
+  whatsappLid   String?
+  email         String?
+  channel       String         @default("whatsapp") // whatsapp, web
+  interest      String?
+  notes         String?        @db.Text
+  conversations Conversation[]
+  appointments  Appointment[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  channel       String    // whatsapp, web
+  remoteId      String    // Número de teléfono o token de sesión web
+  status        String    @default("bot_active") // bot_active, human_takeover, closed
+  needsHuman    Boolean   @default(false)
+  contactId     String?
+  contact       Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  messages      Message[]
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String       // customer, assistant, agent
+  text           String       @db.Text
+  toolsUsed      Json?        // Registro de herramientas llamadas en este turno
+  createdAt      DateTime     @default(now())
+}
+
+model Appointment {
+  id                 String   @id @default(cuid())
+  contactId          String
+  contact            Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  serviceName        String
+  startsAt           DateTime
+  endsAt             DateTime
+  status             String   @default("confirmed") // confirmed, cancelled
+  googleCalendarEventId String?
+  reminderSent       Boolean  @default(false)
+  createdByAssistant Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  channel     String   // whatsapp, web, system
+  integration String?  // google_calendar, gmail, etc.
+  action      String   // tool_call, error, appointment_created, handover
+  details     Json?
+  result      String   @default("success") // success, error
+  createdAt   DateTime @default(now())
+}

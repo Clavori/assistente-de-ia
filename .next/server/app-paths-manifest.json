@@ -1,0 +1,9 @@
+{
+  "/api/business/route": "app/api/business/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/faqs/route": "app/api/faqs/route.js",
+  "/api/assistant/route": "app/api/assistant/route.js",
+  "/api/services/route": "app/api/services/route.js",
+  "/api/ai/models/route": "app/api/ai/models/route.js",
+  "/api/knowledge/import-web/route": "app/api/knowledge/import-web/route.js"
+}
