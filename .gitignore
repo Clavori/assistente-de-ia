@@ -1,5 +1,9 @@
 node_modules/
+.next/
+.pglite_data/
+.whatsapp_auth/
 .env
 *.log
 stitch_atende_ai_assistant_platform (1).zip
 stitch_atende_ai_assistant_platform/
+test_*.mjs
