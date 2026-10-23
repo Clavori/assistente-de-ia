@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const conn = await prisma.whatsappConnection.findFirst({
+    const conn = await prisma.whatsAppConnection.findFirst({
       where: { id: 'default' }
     });
 

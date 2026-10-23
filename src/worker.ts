@@ -24,7 +24,7 @@ async function updateDbConnection(data: {
   connectedNumber?: string | null;
 }) {
   try {
-    await prisma.whatsappConnection.upsert({
+    await prisma.whatsAppConnection.upsert({
       where: { id: 'default' },
       create: {
         id: 'default',
