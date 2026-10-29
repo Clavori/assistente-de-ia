@@ -16,6 +16,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/api/ai') ||
     pathname.startsWith('/api/channels') ||
     pathname.startsWith('/api/widget') ||
+    pathname.startsWith('/api/integrations/google/callback') ||
     pathname.startsWith('/demo') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/assets') ||

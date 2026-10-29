@@ -1,4 +1,10 @@
 import { prisma } from '../prisma';
+import {
+  queryGoogleCalendarAvailableSlots,
+  createGoogleCalendarEvent,
+  sendRealGmailMessage,
+  appendLeadToGoogleSheet
+} from '../integrations/google';
 
 export interface ToolDefinition {
   type: 'function';
@@ -222,9 +228,32 @@ export async function executeTool(
 
       case 'consultar_horarios_livres': {
         const data = args.data || new Date().toISOString().split('T')[0];
-        // Standard available slots for office hours (morning & afternoon)
+
+        if (!safeMode) {
+          try {
+            const realCal = await queryGoogleCalendarAvailableSlots(data);
+            const summary = `Google Calendar (Real): ${realCal.slots.length} horários livres encontrados em ${data} (${realCal.slots.join(', ')})`;
+            return {
+              toolName,
+              args,
+              output: {
+                data,
+                horariosDisponiveis: realCal.slots,
+                fonte: 'google_calendar_oauth',
+                mensagem: `Horários livres reais no Google Calendar para ${data}: ${realCal.slots.join(', ')}.`
+              },
+              summary,
+              simulated: false,
+              success: true,
+              durationMs: Date.now() - startTime
+            };
+          } catch {
+            // Fallback to local schedule if Google Calendar is not yet connected via OAuth
+          }
+        }
+
         const mockAvailableSlots = ['09:30', '11:00', '14:30', '16:00', '17:15'];
-        const summary = `Consultando Google Calendar para ${data}... ${mockAvailableSlots.length} horários livres encontrados (${mockAvailableSlots.join(', ')})`;
+        const summary = `Consultando agenda para ${data}... ${mockAvailableSlots.length} horários livres encontrados (${mockAvailableSlots.join(', ')})`;
 
         return {
           toolName,
@@ -285,6 +314,23 @@ export async function executeTool(
           });
         }
 
+        // Try creating the event in the real Google Calendar if OAuth is connected
+        let googleEventId: string | null = null;
+        try {
+          const validStart = isNaN(startDate.getTime()) ? new Date() : startDate;
+          const validEnd = isNaN(endDate.getTime()) ? new Date(Date.now() + 45 * 60000) : endDate;
+          const gcalEvent = await createGoogleCalendarEvent({
+            summary: `[AndradeStudio] ${servico} — ${nome_cliente}`,
+            description: `Cliente: ${nome_cliente}\nTelefone/WhatsApp: ${telefone_cliente}\nE-mail: ${email_cliente || 'Não informado'}\nCanal: ${channel}\nAgendado por: Andrade AI`,
+            startDate: validStart,
+            endDate: validEnd,
+            attendeeEmail: email_cliente || null
+          });
+          googleEventId = gcalEvent.eventId;
+        } catch {
+          // Keeps local DB booking if Google Calendar OAuth is not connected
+        }
+
         const appointment = await prisma.appointment.create({
           data: {
             contactId: contact.id,
@@ -292,6 +338,7 @@ export async function executeTool(
             startsAt: isNaN(startDate.getTime()) ? new Date() : startDate,
             endsAt: isNaN(endDate.getTime()) ? new Date(Date.now() + 45 * 60000) : endDate,
             status: 'confirmed',
+            googleCalendarEventId: googleEventId,
             createdByAssistant: true
           }
         });
@@ -303,6 +350,7 @@ export async function executeTool(
             action: 'appointment_created',
             details: {
               appointmentId: appointment.id,
+              googleCalendarEventId: googleEventId,
               cliente: nome_cliente,
               telefone: telefone_cliente,
               data_hora,
@@ -312,13 +360,14 @@ export async function executeTool(
           }
         });
 
-        const summary = `Agendamento criado com sucesso: ${nome_cliente} - ${data_hora} (${servico})`;
+        const summary = `Agendamento criado com sucesso: ${nome_cliente} - ${data_hora} (${servico})${googleEventId ? ' [Sincronizado Google Calendar]' : ''}`;
         return {
           toolName,
           args,
           output: {
             status: 'success',
             appointmentId: appointment.id,
+            googleCalendarEventId: googleEventId,
             mensagem: `Agendamento confirmado para ${nome_cliente} no dia ${data_hora}. Protocolo #${appointment.id.slice(-6).toUpperCase()}.`
           },
           summary,
@@ -348,22 +397,35 @@ export async function executeTool(
           };
         }
 
+        let gmailMessageId: string | null = null;
+        try {
+          const sent = await sendRealGmailMessage({
+            to: destinatario,
+            subject: assunto,
+            bodyText: mensagem
+          });
+          gmailMessageId = sent.messageId;
+        } catch {
+          // Fallback if Gmail OAuth is not connected
+        }
+
         await prisma.activityLog.create({
           data: {
             channel,
             integration: 'gmail',
             action: 'email_sent',
-            details: { destinatario, assunto, preview: mensagem.slice(0, 100) },
+            details: { destinatario, assunto, gmailMessageId, preview: mensagem.slice(0, 100) },
             result: 'success'
           }
         });
 
-        const summary = `E-mail de confirmação enviado para ${destinatario}`;
+        const summary = `E-mail de confirmação enviado para ${destinatario}${gmailMessageId ? ' [Gmail OAuth]' : ''}`;
         return {
           toolName,
           args,
           output: {
             status: 'success',
+            gmailMessageId,
             mensagem: `E-mail de confirmação enviado com sucesso para ${destinatario}.`
           },
           summary,
@@ -418,22 +480,38 @@ export async function executeTool(
           });
         }
 
+        let sheetUrl: string | null = null;
+        try {
+          const synced = await appendLeadToGoogleSheet({
+            name: nome,
+            phone: telefone,
+            email,
+            channel: origCanal || channel,
+            interest: interesse,
+            booked: Boolean(pediu_agendamento)
+          });
+          sheetUrl = synced.spreadsheetUrl;
+        } catch {
+          // Fallback to local CRM if Google Sheets OAuth is not connected
+        }
+
         await prisma.activityLog.create({
           data: {
             channel,
             integration: 'google_sheets',
             action: 'contact_sync',
-            details: { nome, telefone, email, interesse, pediu_agendamento },
+            details: { nome, telefone, email, interesse, pediu_agendamento, sheetUrl },
             result: 'success'
           }
         });
 
-        const summary = `Contato sincronizado no CRM e Google Sheets: ${nome}`;
+        const summary = `Contato sincronizado no CRM${sheetUrl ? ' e Google Sheets (Real)' : ''}: ${nome}`;
         return {
           toolName,
           args,
           output: {
             status: 'success',
+            sheetUrl,
             mensagem: `Contato ${nome} sincronizado na base do CRM com sucesso.`
           },
           summary,

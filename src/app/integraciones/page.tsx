@@ -20,7 +20,9 @@ import {
   ChevronUp,
   Sparkles,
   Save,
-  Check
+  Check,
+  Copy,
+  Lock
 } from 'lucide-react';
 
 interface IntegrationTool {
@@ -45,12 +47,36 @@ interface IntegrationItem {
   errorMessage: string | null;
 }
 
+interface GoogleOAuthStatus {
+  configured: boolean;
+  source: 'env' | 'database' | 'unconfigured';
+  redirectUri: string;
+  maskedClientId: string | null;
+}
+
 export default function IntegracoesPage() {
   const [integrations, setIntegrations] = useState<IntegrationItem[]>([]);
+  const [googleOAuth, setGoogleOAuth] = useState<GoogleOAuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [openConfigId, setOpenConfigId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const [feedbackMsg, setFeedbackMsg] = useState<{ id: string; text: string; type: 'success' | 'error' } | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{
+    id: string;
+    text: string;
+    type: 'success' | 'error';
+  } | null>(null);
+  const [topBanner, setTopBanner] = useState<{
+    text: string;
+    type: 'success' | 'error';
+  } | null>(null);
+
+  // Google Cloud OAuth 2.0 Credentials Drawer
+  const [showGoogleCredsModal, setShowGoogleCredsModal] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientSecret, setGoogleClientSecret] = useState('');
+  const [savingGoogleCreds, setSavingGoogleCreds] = useState(false);
+  const [copiedRedirect, setCopiedRedirect] = useState(false);
+  const [pendingGoogleProvider, setPendingGoogleProvider] = useState<string | null>(null);
 
   // Modal / Inputs state
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});
@@ -60,10 +86,13 @@ export default function IntegracoesPage() {
   const loadIntegrations = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/integrations');
+      const res = await fetch('/api/integrations', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setIntegrations(data.integrations || []);
+        if (data.googleOAuth) {
+          setGoogleOAuth(data.googleOAuth);
+        }
 
         const initialSettings: Record<string, Record<string, any>> = {};
         const initialTools: Record<string, string[]> = {};
@@ -83,9 +112,80 @@ export default function IntegracoesPage() {
 
   useEffect(() => {
     loadIntegrations();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const oauthSuccess = params.get('oauth_success');
+      const oauthError = params.get('oauth_error');
+      const email = params.get('email');
+
+      if (oauthSuccess) {
+        setTopBanner({
+          text: `Autenticação Google OAuth 2.0 concluída com sucesso${email ? ` (${email})` : ''}! Token salvo com criptografia AES-256-GCM.`,
+          type: 'success'
+        });
+        window.history.replaceState({}, '', '/integraciones');
+      } else if (oauthError) {
+        if (oauthError === 'missing_credentials') {
+          setShowGoogleCredsModal(true);
+          setTopBanner({
+            text: 'Configure seu Client ID e Client Secret do Google Cloud abaixo para iniciar o login oficial OAuth 2.0.',
+            type: 'error'
+          });
+        } else {
+          setTopBanner({
+            text: `Falha na autorização Google OAuth: ${oauthError}`,
+            type: 'error'
+          });
+        }
+        window.history.replaceState({}, '', '/integraciones');
+      }
+    }
   }, []);
 
-  const handleConnect = async (provider: string, authType: string) => {
+  const handleSaveGoogleOAuthCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleClientId.trim() || !googleClientSecret.trim()) return;
+    setSavingGoogleCreds(true);
+    try {
+      const res = await fetch('/api/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_google_oauth_app',
+          clientId: googleClientId.trim(),
+          clientSecret: googleClientSecret.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar credenciais OAuth');
+
+      setGoogleClientId('');
+      setGoogleClientSecret('');
+      setShowGoogleCredsModal(false);
+      await loadIntegrations();
+
+      if (pendingGoogleProvider) {
+        const providerToLaunch = pendingGoogleProvider;
+        setPendingGoogleProvider(null);
+        await handleConnect(providerToLaunch, 'oauth');
+      } else {
+        setTopBanner({
+          text: 'Credenciais Google Cloud salvas com sucesso! Agora clique em "Conectar com Google (OAuth 2.0)" em qualquer serviço Google.',
+          type: 'success'
+        });
+      }
+    } catch (err: any) {
+      setTopBanner({
+        text: err.message,
+        type: 'error'
+      });
+    } finally {
+      setSavingGoogleCreds(false);
+    }
+  };
+
+  const handleConnect = async (provider: string, authType: string, connectAllGoogle = false) => {
     setSubmittingId(provider);
     try {
       const apiKey = apiKeyInputs[provider] || undefined;
@@ -96,17 +196,36 @@ export default function IntegracoesPage() {
           provider,
           action: 'connect',
           apiKey,
+          connectAllGoogle,
           settings: editedSettings[provider],
           allowedTools: selectedTools[provider]
         })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Falha ao conectar');
+
+      if (!res.ok) {
+        if (data.requiresGoogleCredentials) {
+          setPendingGoogleProvider(provider);
+          setShowGoogleCredsModal(true);
+          setFeedbackMsg({
+            id: provider,
+            text: 'Configure seu Client ID e Client Secret do Google Cloud para abrir a tela de consentimento oficial.',
+            type: 'error'
+          });
+          return;
+        }
+        throw new Error(data.error || 'Falha ao conectar');
+      }
+
+      if (data.requiresOAuthRedirect && data.authUrl) {
+        window.location.href = data.authUrl;
+        return;
+      }
 
       setFeedbackMsg({
         id: provider,
-        text: `Integração conectada com sucesso!`,
+        text: 'Integração conectada com sucesso!',
         type: 'success'
       });
       await loadIntegrations();
@@ -122,7 +241,11 @@ export default function IntegracoesPage() {
   };
 
   const handleDisconnect = async (provider: string) => {
-    if (!confirm('Deseja realmente desconectar esta integração? O assistente perderá acesso às ferramentas relacionadas.')) {
+    if (
+      !confirm(
+        'Deseja realmente desconectar esta integração? O token criptografado será removido e o assistente perderá acesso às ferramentas relacionadas.'
+      )
+    ) {
       return;
     }
 
@@ -141,7 +264,7 @@ export default function IntegracoesPage() {
 
       setFeedbackMsg({
         id: provider,
-        text: 'Integração desconectada.',
+        text: 'Integração desconectada e token revogado.',
         type: 'success'
       });
       await loadIntegrations();
@@ -241,26 +364,38 @@ export default function IntegracoesPage() {
     }));
   };
 
+  const copyRedirectUri = () => {
+    const uri =
+      googleOAuth?.redirectUri ||
+      `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/integrations/google/callback`;
+    navigator.clipboard.writeText(uri);
+    setCopiedRedirect(true);
+    setTimeout(() => setCopiedRedirect(false), 2000);
+  };
+
   const getProviderIcon = (id: string) => {
     switch (id) {
       case 'google_calendar':
-        return <Calendar className="w-6 h-6 text-blue-600" />;
+        return <Calendar className="w-6 h-6 text-blue-500" />;
       case 'gmail':
-        return <Mail className="w-6 h-6 text-red-600" />;
+        return <Mail className="w-6 h-6 text-red-500" />;
       case 'google_sheets':
-        return <FileSpreadsheet className="w-6 h-6 text-emerald-600" />;
+        return <FileSpreadsheet className="w-6 h-6 text-emerald-500" />;
       case 'slack':
-        return <MessageSquare className="w-6 h-6 text-pink-600" />;
+        return <MessageSquare className="w-6 h-6 text-pink-500" />;
       case 'stripe':
-        return <CreditCard className="w-6 h-6 text-indigo-600" />;
+        return <CreditCard className="w-6 h-6 text-indigo-500" />;
       case 'webhooks':
-        return <Webhook className="w-6 h-6 text-amber-600" />;
+        return <Webhook className="w-6 h-6 text-amber-500" />;
       default:
-        return <Sparkles className="w-6 h-6 text-slate-600" />;
+        return <Sparkles className="w-6 h-6 text-slate-400" />;
     }
   };
 
   const connectedCount = integrations.filter((i) => i.status === 'connected').length;
+  const redirectUriDisplay =
+    googleOAuth?.redirectUri ||
+    `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/integrations/google/callback`;
 
   return (
     <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
@@ -276,15 +411,169 @@ export default function IntegracoesPage() {
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Conecte suas contas corporativas para que o assistente de IA consulte sua agenda real, crie reuniões, envie e-mails, gere links de pagamento e notifique a equipe.
+            Conecte suas contas reais via Google OAuth 2.0 e chaves de API para que o assistente consulte sua agenda, envie e-mails e salve leads.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Tokens criptografados em AES-256-GCM</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowGoogleCredsModal(!showGoogleCredsModal)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition shadow-sm"
+          >
+            <Key className="w-3.5 h-3.5 text-[#ff4b52]" />
+            <span>
+              {googleOAuth?.configured
+                ? 'Credenciais Google OAuth (Configuradas)'
+                : 'Configurar Google OAuth 2.0'}
+            </span>
+          </button>
+
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>AES-256-GCM</span>
+          </div>
         </div>
       </div>
+
+      {/* Top OAuth Callback Banner */}
+      {topBanner && (
+        <div
+          className={`p-4 rounded-2xl border text-xs font-medium flex items-center justify-between gap-3 ${
+            topBanner.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {topBanner.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span>{topBanner.text}</span>
+          </div>
+          <button
+            onClick={() => setTopBanner(null)}
+            className="text-xs underline opacity-75 hover:opacity-100"
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+
+      {/* Google Cloud OAuth 2.0 Configuration Panel */}
+      {showGoogleCredsModal && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#ff4b52]" />
+                Configuração Oficial Google OAuth 2.0 (Google Cloud Console)
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Informe o <strong>Client ID</strong> e o <strong>Client Secret</strong> do seu projeto no Google Cloud (ou defina <code className="font-mono">GOOGLE_CLIENT_ID</code> e <code className="font-mono">GOOGLE_CLIENT_SECRET</code> no <code className="font-mono">.env</code> / Vercel). Os dados são salvos com criptografia AES-256-GCM.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowGoogleCredsModal(false)}
+              className="text-xs text-slate-400 hover:text-slate-700"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Redirect URI Box */}
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                URI de Redirecionamento Autorizado (Copie e cole no Google Cloud Console):
+              </span>
+              <button
+                type="button"
+                onClick={copyRedirectUri}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+              >
+                {copiedRedirect ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar URI</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <code className="block text-xs font-mono text-slate-800 break-all select-all">
+              {redirectUriDisplay}
+            </code>
+          </div>
+
+          <form onSubmit={handleSaveGoogleOAuthCredentials} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Google Client ID:
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: 1234567890-abcde.apps.googleusercontent.com"
+                value={googleClientId}
+                onChange={(e) => setGoogleClientId(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Google Client Secret:
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="Ex: GOCSPX-..."
+                value={googleClientSecret}
+                onChange={(e) => setGoogleClientSecret(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl font-mono"
+              />
+            </div>
+
+            <div className="md:col-span-2 flex items-center justify-between gap-3 pt-2">
+              <div className="text-[11px] text-slate-500">
+                {googleOAuth?.configured ? (
+                  <span>
+                    Status atual: <strong className="text-emerald-600">Configurado ({googleOAuth.source === 'env' ? 'Variáveis de Ambiente' : 'Banco Criptografado'})</strong>{' '}
+                    {googleOAuth.maskedClientId && `(${googleOAuth.maskedClientId})`}
+                  </span>
+                ) : (
+                  <span>Status atual: <strong className="text-amber-600">Aguardando Client ID & Secret</strong></span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {googleOAuth?.configured && (
+                  <button
+                    type="button"
+                    onClick={() => handleConnect('google_calendar', 'oauth', true)}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition"
+                  >
+                    Autorizar Todos os 3 Serviços Google de Uma Vez
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={savingGoogleCreds}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition disabled:opacity-50"
+                >
+                  {savingGoogleCreds ? 'Salvando...' : 'Salvar Credenciais OAuth'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Catalog Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -313,7 +602,7 @@ export default function IntegracoesPage() {
                     {isConnected ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Conectado
+                        Conectado (OAuth Real)
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
@@ -336,12 +625,12 @@ export default function IntegracoesPage() {
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
                     {item.accountEmail && (
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Conta:</span>
+                        <span className="text-slate-400">Conta Google:</span>
                         <span className="font-semibold text-slate-800">{item.accountEmail}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Credencial:</span>
+                      <span className="text-slate-400">Token AES-256:</span>
                       <span className="font-mono text-[11px] text-slate-500">
                         {item.maskedToken || '••••••••••••'}
                       </span>
@@ -411,7 +700,11 @@ export default function IntegracoesPage() {
                         ) : (
                           <ExternalLink className="w-3.5 h-3.5" />
                         )}
-                        <span>{item.authType === 'oauth' ? 'Conectar via Google/OAuth' : 'Conectar Integração'}</span>
+                        <span>
+                          {item.category === 'google'
+                            ? 'Conectar com Google (OAuth 2.0)'
+                            : 'Conectar Integração'}
+                        </span>
                       </button>
                       <button
                         onClick={() => setOpenConfigId(isConfigOpen ? null : item.id)}
@@ -465,7 +758,11 @@ export default function IntegracoesPage() {
                             type="number"
                             value={editedSettings[item.id]?.defaultDurationMinutes || 45}
                             onChange={(e) =>
-                              updateSettingField(item.id, 'defaultDurationMinutes', Number(e.target.value))
+                              updateSettingField(
+                                item.id,
+                                'defaultDurationMinutes',
+                                Number(e.target.value)
+                              )
                             }
                             className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-lg"
                           />
@@ -478,7 +775,11 @@ export default function IntegracoesPage() {
                             type="number"
                             value={editedSettings[item.id]?.bufferBetweenAppointmentsMinutes || 15}
                             onChange={(e) =>
-                              updateSettingField(item.id, 'bufferBetweenAppointmentsMinutes', Number(e.target.value))
+                              updateSettingField(
+                                item.id,
+                                'bufferBetweenAppointmentsMinutes',
+                                Number(e.target.value)
+                              )
                             }
                             className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-lg"
                           />
@@ -598,7 +899,7 @@ export default function IntegracoesPage() {
                         disabled={isSubmitting}
                         className="text-xs text-slate-600 hover:text-slate-900 font-medium underline disabled:opacity-50"
                       >
-                        Testar Conexão
+                        Testar Conexão Real
                       </button>
 
                       <button
