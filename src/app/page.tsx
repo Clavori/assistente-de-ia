@@ -67,20 +67,20 @@ export default function ResumoPage() {
         if (resStats.stats) {
           setStats(resStats.stats);
           setRecentActions(resStats.recentActions || []);
-          setWaStatus(resStats.whatsappStatus || 'disconnected');
-          setWaPhone(resStats.whatsappPhone || null);
-          if (typeof window !== 'undefined') {
-            if (resStats.whatsappStatus === 'connected') {
-              localStorage.setItem(
-                'andrade_wa_session',
-                JSON.stringify({
-                  connected: true,
-                  phone: resStats.whatsappPhone || null
-                })
-              );
-            } else {
-              localStorage.removeItem('andrade_wa_session');
-            }
+          const finalConnected =
+            resStats.whatsappStatus === 'connected' || savedConnected;
+          setWaStatus(
+            finalConnected ? 'connected' : resStats.whatsappStatus || 'disconnected'
+          );
+          setWaPhone(resStats.whatsappPhone || savedPhone || null);
+          if (finalConnected && typeof window !== 'undefined') {
+            localStorage.setItem(
+              'andrade_wa_session',
+              JSON.stringify({
+                connected: true,
+                phone: resStats.whatsappPhone || savedPhone || null
+              })
+            );
           }
         }
       } catch (err) {

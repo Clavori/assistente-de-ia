@@ -45,23 +45,38 @@ export default function CanalesPage() {
   // Fetch WhatsApp status and poll every 3s
   const fetchWhatsAppStatus = async () => {
     try {
-      const res = await fetch('/api/channels/whatsapp?heartbeat=1', { cache: 'no-store' });
+      let savedSession: { connected?: boolean; phone?: string | null } | null = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('andrade_wa_session');
+          if (raw) savedSession = JSON.parse(raw);
+        } catch {}
+      }
+
+      const query =
+        savedSession?.connected && savedSession?.phone
+          ? `?heartbeat=1&connectedPhone=${encodeURIComponent(savedSession.phone)}`
+          : '?heartbeat=1';
+
+      const res = await fetch(`/api/channels/whatsapp${query}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setWaStatus(data.status);
-        setWaQr(data.qrCode);
-        setWaPhone(data.connectedNumber);
-        if (data.pairingCode) setPairingCode(data.pairingCode);
-
-        if (typeof window !== 'undefined') {
-          if (data.status === 'connected') {
+        if (data.status === 'connected' || savedSession?.connected) {
+          const phone = data.connectedNumber || savedSession?.phone || null;
+          setWaStatus('connected');
+          setWaQr(null);
+          setWaPhone(phone);
+          if (typeof window !== 'undefined' && phone) {
             localStorage.setItem(
               'andrade_wa_session',
-              JSON.stringify({ connected: true, phone: data.connectedNumber || null })
+              JSON.stringify({ connected: true, phone })
             );
-          } else {
-            localStorage.removeItem('andrade_wa_session');
           }
+        } else {
+          setWaStatus(data.status);
+          setWaQr(data.qrCode);
+          setWaPhone(data.connectedNumber);
+          if (data.pairingCode) setPairingCode(data.pairingCode);
         }
       }
     } catch (err) {

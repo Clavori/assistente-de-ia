@@ -6,6 +6,11 @@ import {
   verifySignedOAuthState,
   exchangeGoogleCodeForTokens
 } from '@/lib/integrations/google';
+import {
+  hydrateIntegrationsFromCookie,
+  buildIntegrationsSyncCookieValue,
+  INTEGRATIONS_COOKIE_NAME
+} from '@/lib/integrations/cookieSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +34,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    await hydrateIntegrationsFromCookie();
+
     const stateData = verifySignedOAuthState(state);
     const { tokens, email } = await exchangeGoogleCodeForTokens({
       code,
@@ -36,10 +43,23 @@ export async function GET(req: NextRequest) {
     });
 
     const encryptedData = encrypt(tokens);
+    const scopeStr = String(tokens.scope || '');
 
-    const providersToConnect = stateData.connectAllGoogle
-      ? ['google_calendar', 'gmail', 'google_sheets']
-      : [stateData.provider];
+    // Automatically activate all Google services whose scopes were granted by the user
+    const providersSet = new Set<string>([stateData.provider]);
+    if (stateData.connectAllGoogle) {
+      providersSet.add('google_calendar');
+      providersSet.add('gmail');
+      providersSet.add('google_sheets');
+    }
+    if (scopeStr.includes('calendar')) providersSet.add('google_calendar');
+    if (scopeStr.includes('gmail')) providersSet.add('gmail');
+    if (scopeStr.includes('spreadsheets') || scopeStr.includes('drive')) {
+      providersSet.add('google_sheets');
+    }
+
+    const providersToConnect = Array.from(providersSet);
+    const cookieUpdates: Record<string, { s: string; e: string | null; d: string | null }> = {};
 
     for (const provider of providersToConnect) {
       const catalogItem = INTEGRATIONS_CATALOG.find((i) => i.id === provider);
@@ -77,6 +97,12 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      cookieUpdates[provider] = {
+        s: 'connected',
+        e: email,
+        d: encryptedData
+      };
+
       await prisma.activityLog.create({
         data: {
           channel: 'system',
@@ -92,10 +118,20 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    const syncCookieVal = await buildIntegrationsSyncCookieValue(cookieUpdates);
+
     const redirectUrl = new URL('/integraciones', origin);
     redirectUrl.searchParams.set('oauth_success', providersToConnect.join(','));
     redirectUrl.searchParams.set('email', email);
-    return NextResponse.redirect(redirectUrl);
+
+    const res = NextResponse.redirect(redirectUrl);
+    res.cookies.set(INTEGRATIONS_COOKIE_NAME, syncCookieVal, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 90, // 90 days
+      sameSite: 'lax'
+    });
+    return res;
   } catch (err: any) {
     console.error('Erro no callback Google OAuth:', err);
     const redirectUrl = new URL('/integraciones', origin);

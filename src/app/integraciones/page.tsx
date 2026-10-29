@@ -91,14 +91,54 @@ export default function IntegracoesPage() {
       const res = await fetch('/api/integrations', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setIntegrations(data.integrations || []);
+        let savedMap: Record<
+          string,
+          { status: 'connected'; accountEmail: string | null; maskedToken?: string }
+        > = {};
+
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('andrade_connected_integrations');
+            if (raw) savedMap = JSON.parse(raw);
+          } catch {}
+        }
+
+        const mergedList: IntegrationItem[] = (data.integrations || []).map(
+          (item: IntegrationItem) => {
+            if (item.status === 'connected') {
+              savedMap[item.id] = {
+                status: 'connected',
+                accountEmail: item.accountEmail,
+                maskedToken: item.maskedToken
+              };
+              return item;
+            }
+            if (savedMap[item.id]?.status === 'connected') {
+              return {
+                ...item,
+                status: 'connected',
+                accountEmail: savedMap[item.id].accountEmail || item.accountEmail,
+                maskedToken: savedMap[item.id].maskedToken || item.maskedToken || 'OAuth2 ••••AES256'
+              };
+            }
+            return item;
+          }
+        );
+
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('andrade_connected_integrations', JSON.stringify(savedMap));
+          } catch {}
+        }
+
+        setIntegrations(mergedList);
         if (data.googleOAuth) {
           setGoogleOAuth(data.googleOAuth);
         }
 
         const initialSettings: Record<string, Record<string, any>> = {};
         const initialTools: Record<string, string[]> = {};
-        for (const item of data.integrations || []) {
+        for (const item of mergedList) {
           initialSettings[item.id] = { ...item.settings };
           initialTools[item.id] = [...item.allowedTools];
         }
@@ -113,8 +153,6 @@ export default function IntegracoesPage() {
   };
 
   useEffect(() => {
-    loadIntegrations();
-
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const oauthSuccess = params.get('oauth_success');
@@ -122,6 +160,21 @@ export default function IntegracoesPage() {
       const email = params.get('email');
 
       if (oauthSuccess) {
+        try {
+          const raw = localStorage.getItem('andrade_connected_integrations');
+          const parsed = raw ? JSON.parse(raw) : {};
+          for (const prov of oauthSuccess.split(',')) {
+            if (prov) {
+              parsed[prov] = {
+                status: 'connected',
+                accountEmail: email || null,
+                maskedToken: 'OAuth2 ••••AES256'
+              };
+            }
+          }
+          localStorage.setItem('andrade_connected_integrations', JSON.stringify(parsed));
+        } catch {}
+
         setTopBanner({
           text: `Autenticação Google OAuth 2.0 concluída com sucesso${email ? ` (${email})` : ''}! Token salvo com criptografia AES-256-GCM.`,
           type: 'success'
@@ -143,6 +196,8 @@ export default function IntegracoesPage() {
         window.history.replaceState({}, '', '/integraciones');
       }
     }
+
+    loadIntegrations();
   }, []);
 
   const handleSaveGoogleOAuthCredentials = async (e: React.FormEvent) => {
@@ -263,6 +318,17 @@ export default function IntegracoesPage() {
       });
 
       if (!res.ok) throw new Error('Falha ao desconectar');
+
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('andrade_connected_integrations');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            delete parsed[provider];
+            localStorage.setItem('andrade_connected_integrations', JSON.stringify(parsed));
+          }
+        } catch {}
+      }
 
       setFeedbackMsg({
         id: provider,

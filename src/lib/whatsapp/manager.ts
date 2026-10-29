@@ -551,16 +551,12 @@ export async function getWhatsAppStatus(options?: { heartbeat?: boolean }) {
     }
   }
 
-  // On Vercel Serverless, keep the function CPU awake during heartbeat polls
-  // and never return while an incoming WhatsApp message is mid-processing!
-  if (options?.heartbeat && state.status === 'connected') {
-    if (process.env.VERCEL) {
-      await new Promise((r) => setTimeout(r, 2200));
-    }
+  // Never return while an incoming WhatsApp message is actively mid-processing
+  if (state.processingCount > 0) {
     let waitProcessing = 0;
-    while (state.processingCount > 0 && waitProcessing < 12000) {
-      await new Promise((r) => setTimeout(r, 250));
-      waitProcessing += 250;
+    while (state.processingCount > 0 && waitProcessing < 8000) {
+      await new Promise((r) => setTimeout(r, 200));
+      waitProcessing += 200;
     }
   }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getWhatsAppStatus } from '@/lib/whatsapp/manager';
 
@@ -43,7 +44,11 @@ export async function GET() {
       getWhatsAppStatus().catch(() => null)
     ]);
 
-    const realStatus = liveWa?.status || waConn?.status || 'disconnected';
+    const cookiePhone = cookies().get('andrade_wa_connected')?.value || null;
+    const realStatus =
+      cookiePhone || liveWa?.status === 'connected' || waConn?.status === 'connected'
+        ? 'connected'
+        : liveWa?.status || waConn?.status || 'disconnected';
 
     return NextResponse.json({
       success: true,
@@ -58,7 +63,7 @@ export async function GET() {
       whatsappStatus: realStatus,
       whatsappPhone:
         realStatus === 'connected'
-          ? liveWa?.connectedNumber || waConn?.connectedNumber || null
+          ? liveWa?.connectedNumber || waConn?.connectedNumber || cookiePhone
           : null
     });
   } catch (err: any) {

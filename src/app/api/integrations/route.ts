@@ -8,21 +8,46 @@ import {
   isMockEncryptedData,
   getValidGoogleAccessToken
 } from '@/lib/integrations/google';
+import {
+  hydrateIntegrationsFromCookie,
+  buildIntegrationsSyncCookieValue,
+  INTEGRATIONS_COOKIE_NAME
+} from '@/lib/integrations/cookieSync';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    await hydrateIntegrationsFromCookie();
+
     const origin = new URL(req.url).origin;
     const creds = await getGoogleClientCredentials(origin);
     const dbIntegrations = await prisma.integration.findMany();
+
+    // If any Google service has a valid real OAuth token with scopes for the other Google services,
+    // keep them synchronized across containers
+    const connectedGoogleRow = dbIntegrations.find(
+      (i) =>
+        ['google_calendar', 'gmail', 'google_sheets'].includes(i.provider) &&
+        i.status === 'connected' &&
+        i.encryptedData &&
+        !isMockEncryptedData(i.encryptedData)
+    );
+
+    let sharedScopeStr = '';
+    if (connectedGoogleRow?.encryptedData) {
+      try {
+        const tok = decrypt<any>(connectedGoogleRow.encryptedData);
+        sharedScopeStr = String(tok?.scope || '');
+      } catch {}
+    }
 
     const result = [];
 
     for (const catalogItem of INTEGRATIONS_CATALOG) {
       let match = dbIntegrations.find((i) => i.provider === catalogItem.id);
 
-      // Clean up any legacy mock OAuth tokens automatically so only real OAuth connections show as connected
+      // Clean up any legacy mock OAuth tokens automatically
       if (
         match &&
         match.status === 'connected' &&
@@ -38,6 +63,40 @@ export async function GET(req: NextRequest) {
             errorMessage: null
           }
         });
+      }
+
+      // If another Google service row on this instance has a multi-scope token covering this service, hydrate it
+      if (
+        (!match || match.status !== 'connected') &&
+        connectedGoogleRow &&
+        catalogItem.category === 'google'
+      ) {
+        const scopeCoversThis =
+          (catalogItem.id === 'google_calendar' && sharedScopeStr.includes('calendar')) ||
+          (catalogItem.id === 'gmail' && sharedScopeStr.includes('gmail')) ||
+          (catalogItem.id === 'google_sheets' &&
+            (sharedScopeStr.includes('spreadsheets') || sharedScopeStr.includes('drive')));
+
+        if (scopeCoversThis) {
+          match = await prisma.integration.upsert({
+            where: { provider: catalogItem.id },
+            create: {
+              provider: catalogItem.id,
+              status: 'connected',
+              accountEmail: connectedGoogleRow.accountEmail,
+              encryptedData: connectedGoogleRow.encryptedData,
+              settings: catalogItem.defaultSettings,
+              allowedTools: catalogItem.tools.map((t) => t.id),
+              lastSyncAt: new Date()
+            },
+            update: {
+              status: 'connected',
+              accountEmail: connectedGoogleRow.accountEmail,
+              encryptedData: connectedGoogleRow.encryptedData,
+              lastSyncAt: new Date()
+            }
+          });
+        }
       }
 
       let maskedToken: string | undefined = undefined;
@@ -73,7 +132,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const syncCookieVal = await buildIntegrationsSyncCookieValue();
+    const res = NextResponse.json({
       success: true,
       integrations: result,
       googleOAuth: {
@@ -85,6 +145,14 @@ export async function GET(req: NextRequest) {
           : null
       }
     });
+
+    res.cookies.set(INTEGRATIONS_COOKIE_NAME, syncCookieVal, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 90,
+      sameSite: 'lax'
+    });
+    return res;
   } catch (err: any) {
     console.error('Erro ao listar integrações:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -93,6 +161,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await hydrateIntegrationsFromCookie();
+
     const origin = new URL(req.url).origin;
     const body = await req.json();
     const {
@@ -121,34 +191,36 @@ export async function POST(req: NextRequest) {
         savedAt: new Date().toISOString()
       });
 
-      const existingApp = await prisma.integration.findUnique({
-        where: { provider: 'google_oauth_app' }
+      await prisma.integration.upsert({
+        where: { provider: 'google_oauth_app' },
+        create: {
+          provider: 'google_oauth_app',
+          status: 'connected',
+          encryptedData,
+          lastSyncAt: new Date()
+        },
+        update: {
+          status: 'connected',
+          encryptedData,
+          lastSyncAt: new Date()
+        }
       });
 
-      if (existingApp) {
-        await prisma.integration.update({
-          where: { provider: 'google_oauth_app' },
-          data: {
-            status: 'connected',
-            encryptedData,
-            lastSyncAt: new Date()
-          }
-        });
-      } else {
-        await prisma.integration.create({
-          data: {
-            provider: 'google_oauth_app',
-            status: 'connected',
-            encryptedData,
-            lastSyncAt: new Date()
-          }
-        });
-      }
+      const syncCookieVal = await buildIntegrationsSyncCookieValue({
+        google_oauth_app: { s: 'connected', e: null, d: encryptedData }
+      });
 
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         message: 'Credenciais Google OAuth 2.0 salvas com criptografia AES-256-GCM!'
       });
+      res.cookies.set(INTEGRATIONS_COOKIE_NAME, syncCookieVal, {
+        httpOnly: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 90,
+        sameSite: 'lax'
+      });
+      return res;
     }
 
     if (!provider) {
@@ -246,7 +318,18 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      return NextResponse.json({ success: true, integration: existing });
+      const syncCookieVal = await buildIntegrationsSyncCookieValue({
+        [provider]: { s: 'connected', e: null, d: encryptedData }
+      });
+
+      const res = NextResponse.json({ success: true, integration: existing });
+      res.cookies.set(INTEGRATIONS_COOKIE_NAME, syncCookieVal, {
+        httpOnly: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 90,
+        sameSite: 'lax'
+      });
+      return res;
     }
 
     if (action === 'disconnect') {
@@ -273,7 +356,21 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      return NextResponse.json({ success: true, message: 'Integração desconectada com sucesso.' });
+      const syncCookieVal = await buildIntegrationsSyncCookieValue({
+        [provider]: null
+      });
+
+      const res = NextResponse.json({
+        success: true,
+        message: 'Integração desconectada com sucesso.'
+      });
+      res.cookies.set(INTEGRATIONS_COOKIE_NAME, syncCookieVal, {
+        httpOnly: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 90,
+        sameSite: 'lax'
+      });
+      return res;
     }
 
     if (action === 'update_settings') {
