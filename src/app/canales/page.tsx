@@ -42,16 +42,41 @@ export default function CanalesPage() {
   const [savingWebChat, setSavingWebChat] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
-  // Fetch WhatsApp status and poll every 2.5s
+  // Fetch WhatsApp status and poll every 3s
   const fetchWhatsAppStatus = async () => {
     try {
-      const res = await fetch('/api/channels/whatsapp', { cache: 'no-store' });
+      let savedSession: { connected?: boolean; phone?: string | null } | null = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('andrade_wa_session');
+          if (raw) savedSession = JSON.parse(raw);
+        } catch {}
+      }
+
+      const query = savedSession?.connected
+        ? `?keepConnected=true${savedSession.phone ? `&connectedPhone=${encodeURIComponent(savedSession.phone)}` : ''}`
+        : '';
+
+      const res = await fetch(`/api/channels/whatsapp${query}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setWaStatus(data.status);
-        setWaQr(data.qrCode);
-        setWaPhone(data.connectedNumber);
-        if (data.pairingCode) setPairingCode(data.pairingCode);
+        if (data.status === 'connected' || savedSession?.connected) {
+          const phone = data.connectedNumber || savedSession?.phone || null;
+          setWaStatus('connected');
+          setWaQr(null);
+          setWaPhone(phone);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              'andrade_wa_session',
+              JSON.stringify({ connected: true, phone })
+            );
+          }
+        } else {
+          setWaStatus(data.status);
+          setWaQr(data.qrCode);
+          setWaPhone(data.connectedNumber);
+          if (data.pairingCode) setPairingCode(data.pairingCode);
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar status do WhatsApp:', err);
@@ -77,6 +102,18 @@ export default function CanalesPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('andrade_wa_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.connected) {
+            setWaStatus('connected');
+            if (parsed.phone) setWaPhone(parsed.phone);
+          }
+        }
+      } catch {}
+    }
     fetchWhatsAppStatus();
     fetchWebChatConfig();
     const interval = setInterval(fetchWhatsAppStatus, 3000);
@@ -87,11 +124,15 @@ export default function CanalesPage() {
     if (!confirm('Deseja realmente desconectar a sessão do WhatsApp?')) return;
     setDisconnecting(true);
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('andrade_wa_session');
+      }
       await fetch('/api/channels/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'disconnect' })
       });
+      setWaStatus('waiting_qr');
       await fetchWhatsAppStatus();
     } catch (err) {
       console.error(err);
@@ -105,6 +146,9 @@ export default function CanalesPage() {
     setPairingCode(null);
     setPairingError('');
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('andrade_wa_session');
+      }
       const res = await fetch('/api/channels/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

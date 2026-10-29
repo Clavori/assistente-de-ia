@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getWhatsAppStatus } from '@/lib/whatsapp/manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,8 @@ export async function GET() {
       appointmentsCount,
       waitingHumanCount,
       recentActions,
-      waConn
+      waConn,
+      liveWa
     ] = await Promise.all([
       prisma.conversation.count({
         where: { lastMessageAt: { gte: startOfToday } }
@@ -37,8 +39,12 @@ export async function GET() {
       }),
       prisma.whatsAppConnection.findFirst({
         where: { id: 'default' }
-      })
+      }),
+      getWhatsAppStatus().catch(() => null)
     ]);
+
+    const isConnected =
+      liveWa?.status === 'connected' || waConn?.status === 'connected';
 
     return NextResponse.json({
       success: true,
@@ -50,8 +56,11 @@ export async function GET() {
         avgResponseTime: '1.2s'
       },
       recentActions,
-      whatsappStatus: waConn?.status || 'disconnected',
-      whatsappPhone: waConn?.connectedNumber || null
+      whatsappStatus: isConnected
+        ? 'connected'
+        : liveWa?.status || waConn?.status || 'disconnected',
+      whatsappPhone:
+        liveWa?.connectedNumber || waConn?.connectedNumber || null
     });
   } catch (err: any) {
     console.error('Stats error details:', err);

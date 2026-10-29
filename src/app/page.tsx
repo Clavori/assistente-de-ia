@@ -33,6 +33,23 @@ export default function ResumoPage() {
   const [waPhone, setWaPhone] = useState<string | null>(null);
 
   useEffect(() => {
+    let savedConnected = false;
+    let savedPhone: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('andrade_wa_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.connected) {
+            savedConnected = true;
+            savedPhone = parsed.phone || null;
+            setWaStatus('connected');
+            setWaPhone(savedPhone);
+          }
+        }
+      } catch {}
+    }
+
     async function loadData() {
       try {
         const [resAssistant, resBiz, resStats] = await Promise.all([
@@ -50,8 +67,21 @@ export default function ResumoPage() {
         if (resStats.stats) {
           setStats(resStats.stats);
           setRecentActions(resStats.recentActions || []);
-          setWaStatus(resStats.whatsappStatus || 'disconnected');
-          setWaPhone(resStats.whatsappPhone || null);
+          const finalConnected =
+            resStats.whatsappStatus === 'connected' || savedConnected;
+          setWaStatus(
+            finalConnected ? 'connected' : resStats.whatsappStatus || 'disconnected'
+          );
+          setWaPhone(resStats.whatsappPhone || savedPhone || null);
+          if (resStats.whatsappStatus === 'connected' && typeof window !== 'undefined') {
+            localStorage.setItem(
+              'andrade_wa_session',
+              JSON.stringify({
+                connected: true,
+                phone: resStats.whatsappPhone || savedPhone || null
+              })
+            );
+          }
         }
       } catch (err) {
         console.error(err);

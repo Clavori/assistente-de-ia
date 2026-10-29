@@ -21,6 +21,7 @@ interface WAState {
   pairingCode: string | null;
   connectedNumber: string | null;
   isStarting: boolean;
+   hydratedFromDb: boolean;
   cachedVersion: [number, number, number] | null;
   lastUpdated: number;
 }
@@ -39,11 +40,44 @@ function getWAState(): WAState {
       pairingCode: null,
       connectedNumber: null,
       isStarting: false,
+      hydratedFromDb: false,
       cachedVersion: null,
       lastUpdated: Date.now()
     };
   }
   return global.__waState;
+}
+
+async function hydrateFromDbAndDisk(state: WAState) {
+  if (state.hydratedFromDb) return;
+  state.hydratedFromDb = true;
+
+  try {
+    // 1. Check disk credentials first
+    const credsFile = path.join(SESSION_DIR, 'creds.json');
+    if (fs.existsSync(credsFile)) {
+      const raw = JSON.parse(fs.readFileSync(credsFile, 'utf-8'));
+      const meId = raw?.me?.id || '';
+      if (meId) {
+        const phone = (meId.split(':')[0] || meId.split('@')[0]).replace(/\D/g, '');
+        if (phone) {
+          state.status = 'connected';
+          state.connectedNumber = phone;
+          state.qrCode = null;
+        }
+      }
+    }
+
+    // 2. Check database record
+    const dbConn = await prisma.whatsAppConnection.findFirst({
+      where: { id: 'default' }
+    });
+    if (dbConn && dbConn.status === 'connected') {
+      state.status = 'connected';
+      state.connectedNumber = dbConn.connectedNumber || state.connectedNumber;
+      state.qrCode = null;
+    }
+  } catch {}
 }
 
 async function syncStateToDb(state: WAState) {
@@ -72,6 +106,7 @@ async function syncStateToDb(state: WAState) {
 
 export async function startWhatsAppSession(forceClean = false): Promise<WAState> {
   const state = getWAState();
+  await hydrateFromDbAndDisk(state);
 
   if (state.isStarting) {
     return state;
@@ -91,10 +126,16 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
       state.sock = null;
     }
 
-    if (forceClean && fs.existsSync(SESSION_DIR)) {
-      try {
-        fs.rmSync(SESSION_DIR, { recursive: true, force: true });
-      } catch {}
+    if (forceClean) {
+      state.status = 'disconnected';
+      state.connectedNumber = null;
+      state.qrCode = null;
+      state.pairingCode = null;
+      if (fs.existsSync(SESSION_DIR)) {
+        try {
+          fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+        } catch {}
+      }
     }
 
     if (!fs.existsSync(SESSION_DIR)) {
@@ -102,6 +143,19 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
     }
 
     const { state: authState, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
+
+    // If authState already has a paired user (creds.me), mark as connected immediately!
+    if (authState.creds?.me?.id) {
+      const pairedPhone = (
+        authState.creds.me.id.split(':')[0] || authState.creds.me.id.split('@')[0]
+      ).replace(/\D/g, '');
+      if (pairedPhone) {
+        state.status = 'connected';
+        state.connectedNumber = pairedPhone;
+        state.qrCode = null;
+        await syncStateToDb(state);
+      }
+    }
 
     if (!state.cachedVersion) {
       try {
@@ -126,12 +180,28 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
     state.sock = sock;
     state.isStarting = false;
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async () => {
+      await saveCreds();
+      // Immediately detect when phone completes pairing even before 515 reconnect
+      const meId = authState.creds?.me?.id;
+      if (meId) {
+        const phone = (meId.split(':')[0] || meId.split('@')[0]).replace(/\D/g, '');
+        if (phone && state.status !== 'connected') {
+          state.status = 'connected';
+          state.connectedNumber = phone;
+          state.qrCode = null;
+          state.pairingCode = null;
+          state.lastUpdated = Date.now();
+          await syncStateToDb(state);
+        }
+      }
+    });
 
     sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
 
-      if (qr) {
+      // Never overwrite an already-connected session with a QR code
+      if (qr && state.status !== 'connected' && !state.connectedNumber) {
         try {
           const qrDataUrl = await QRCode.toDataURL(qr, {
             margin: 2,
@@ -150,22 +220,15 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
         }
       }
 
-      if (connection === 'connecting') {
-        if (state.status !== 'waiting_qr') {
-          state.status = 'connecting';
-          state.lastUpdated = Date.now();
-        }
-      }
-
       if (connection === 'open') {
-        const userJid = sock.user?.id || '';
+        const userJid = sock.user?.id || authState.creds?.me?.id || '';
         const phone = (userJid.split(':')[0] || userJid.split('@')[0]).replace(/\D/g, '');
         console.log(`[WA Manager] ✅ WhatsApp Conectado! Número: +${phone}`);
 
         state.status = 'connected';
         state.qrCode = null;
         state.pairingCode = null;
-        state.connectedNumber = phone;
+        state.connectedNumber = phone || state.connectedNumber;
         state.lastUpdated = Date.now();
         await syncStateToDb(state);
 
@@ -174,7 +237,7 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
             data: {
               channel: 'whatsapp',
               action: 'whatsapp_connected',
-              details: { phone },
+              details: { phone: state.connectedNumber },
               result: 'success'
             }
           })
@@ -183,30 +246,24 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-        const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
+        const isRestartRequired =
+          statusCode === DisconnectReason.restartRequired || statusCode === 515;
 
-        console.log(
-          `[WA Manager] Conexão fechada (code: ${statusCode}). RestartRequired: ${isRestartRequired}, LoggedOut: ${isLoggedOut}`
-        );
-
-        if (isLoggedOut) {
-          state.status = 'disconnected';
+        // If the session was already paired/connected, keep it marked as connected
+        // and silently reconnect in the background so page navigation NEVER drops the session!
+        if (state.status === 'connected' || state.connectedNumber || authState.creds?.me?.id) {
+          state.status = 'connected';
           state.qrCode = null;
-          state.pairingCode = null;
-          state.connectedNumber = null;
-          await syncStateToDb(state);
-          // Clean logged-out credentials and prepare fresh QR
-          setTimeout(() => startWhatsAppSession(true), 800);
-        } else if (isRestartRequired) {
-          // CRITICAL: Right after scanning QR code, WhatsApp sends 515 (restartRequired).
-          // Reconnect IMMEDIATELY (<150ms) and keep status as 'connecting' so pairing succeeds!
+          setTimeout(() => startWhatsAppSession(false), isRestartRequired ? 150 : 2500);
+          return;
+        }
+
+        if (isRestartRequired) {
           state.status = 'connecting';
           state.qrCode = null;
           setTimeout(() => startWhatsAppSession(false), 150);
         } else {
-          // Normal timeout or network hiccup: reconnect quickly
-          setTimeout(() => startWhatsAppSession(false), 1500);
+          setTimeout(() => startWhatsAppSession(false), 2000);
         }
       }
     });
@@ -340,18 +397,31 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
   } catch (err: any) {
     console.error('[WA Manager Init Error]:', err.message);
     state.isStarting = false;
-    state.status = 'error';
     return state;
   }
 }
 
 export async function getWhatsAppStatus() {
   const state = getWAState();
+  await hydrateFromDbAndDisk(state);
 
-  // Automatically start session if never started
-  if (!state.sock && !state.isStarting && state.status === 'disconnected') {
+  // If already connected in DB or memory, make sure background socket is alive and return connected immediately!
+  if (state.status === 'connected' || state.connectedNumber) {
+    if (!state.sock && !state.isStarting) {
+      startWhatsAppSession(false).catch(() => {});
+    }
+    return {
+      status: 'connected' as const,
+      qrCode: null,
+      pairingCode: null,
+      connectedNumber: state.connectedNumber,
+      lastActiveAt: new Date(state.lastUpdated).toISOString()
+    };
+  }
+
+  // Otherwise start session to generate QR code
+  if (!state.sock && !state.isStarting) {
     await startWhatsAppSession(false);
-    // Wait up to 1.8s on initial request if QR is being generated right now
     let waited = 0;
     while (!state.qrCode && state.status !== 'connected' && waited < 1800) {
       await new Promise((r) => setTimeout(r, 200));
@@ -368,10 +438,24 @@ export async function getWhatsAppStatus() {
   };
 }
 
+export async function markWhatsAppConnected(phone?: string | null) {
+  const state = getWAState();
+  state.status = 'connected';
+  state.qrCode = null;
+  state.pairingCode = null;
+  if (phone) state.connectedNumber = phone.replace(/\D/g, '');
+  state.lastUpdated = Date.now();
+  await syncStateToDb(state);
+  return getWhatsAppStatus();
+}
+
 export async function disconnectWhatsAppSession() {
   const state = getWAState();
   if (state.sock) {
     try {
+      state.sock.ev.removeAllListeners('connection.update');
+      state.sock.ev.removeAllListeners('creds.update');
+      state.sock.ev.removeAllListeners('messages.upsert');
       await state.sock.logout();
     } catch {}
     try {

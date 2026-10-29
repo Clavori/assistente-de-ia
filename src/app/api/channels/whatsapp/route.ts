@@ -3,13 +3,23 @@ import {
   getWhatsAppStatus,
   startWhatsAppSession,
   disconnectWhatsAppSession,
-  requestWhatsAppPairingCode
+  requestWhatsAppPairingCode,
+  markWhatsAppConnected
 } from '@/lib/whatsapp/manager';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const keepConnected = url.searchParams.get('keepConnected') === 'true';
+    const connectedPhone = url.searchParams.get('connectedPhone');
+
+    if (keepConnected) {
+      const data = await markWhatsAppConnected(connectedPhone || undefined);
+      return NextResponse.json(data);
+    }
+
     const data = await getWhatsAppStatus();
     return NextResponse.json(data);
   } catch (err: any) {
@@ -21,6 +31,14 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, phone } = body;
+
+    if (action === 'sync_connected') {
+      const status = await markWhatsAppConnected(phone || undefined);
+      return NextResponse.json({
+        success: true,
+        ...status
+      });
+    }
 
     if (action === 'disconnect') {
       const status = await disconnectWhatsAppSession();
