@@ -24,29 +24,34 @@ export default function CanalesPage() {
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'webchat'>('whatsapp');
 
   // WhatsApp states
-  const [waStatus, setWaStatus] = useState<'disconnected' | 'waiting_qr' | 'connected' | 'error'>('disconnected');
+  const [waStatus, setWaStatus] = useState<'disconnected' | 'waiting_qr' | 'connecting' | 'connected' | 'error'>('disconnected');
   const [waQr, setWaQr] = useState<string | null>(null);
   const [waPhone, setWaPhone] = useState<string | null>(null);
   const [waLoading, setWaLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [pairingPhone, setPairingPhone] = useState('');
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [requestingCode, setRequestingCode] = useState(false);
+  const [pairingError, setPairingError] = useState('');
 
   // WebChat states
   const [chatEnabled, setChatEnabled] = useState(true);
-  const [primaryColor, setPrimaryColor] = useState('#059669');
-  const [welcomeMessage, setWelcomeMessage] = useState('Olá! Sou o assistente virtual da Andrade Studio AI. Como posso te ajudar hoje?');
+  const [primaryColor, setPrimaryColor] = useState('#f20d16');
+  const [welcomeMessage, setWelcomeMessage] = useState('Olá! Sou o assistente virtual da AndradeStudio. Como posso te ajudar hoje?');
   const [botName, setBotName] = useState('Andrade AI');
   const [savingWebChat, setSavingWebChat] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
-  // Fetch WhatsApp status and poll every 3s
+  // Fetch WhatsApp status and poll every 2.5s
   const fetchWhatsAppStatus = async () => {
     try {
-      const res = await fetch('/api/channels/whatsapp');
+      const res = await fetch('/api/channels/whatsapp', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setWaStatus(data.status);
         setWaQr(data.qrCode);
         setWaPhone(data.connectedNumber);
+        if (data.pairingCode) setPairingCode(data.pairingCode);
       }
     } catch (err) {
       console.error('Erro ao buscar status do WhatsApp:', err);
@@ -97,17 +102,48 @@ export default function CanalesPage() {
 
   const handleRestartWhatsApp = async () => {
     setWaLoading(true);
+    setPairingCode(null);
+    setPairingError('');
     try {
-      await fetch('/api/channels/whatsapp', {
+      const res = await fetch('/api/channels/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'restart' })
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status) setWaStatus(data.status);
+        if (data.qrCode) setWaQr(data.qrCode);
+      }
       await fetchWhatsAppStatus();
     } catch (err) {
       console.error(err);
     } finally {
       setWaLoading(false);
+    }
+  };
+
+  const handleRequestPairingCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairingPhone.trim()) return;
+    setRequestingCode(true);
+    setPairingError('');
+    try {
+      const res = await fetch('/api/channels/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pairing_code', phone: pairingPhone })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPairingError(data.error || 'Erro ao gerar código de pareamento');
+      } else if (data.pairingCode) {
+        setPairingCode(data.pairingCode);
+      }
+    } catch {
+      setPairingError('Falha ao solicitar código de pareamento');
+    } finally {
+      setRequestingCode(false);
     }
   };
 
@@ -201,7 +237,12 @@ export default function CanalesPage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Conectado
                 </span>
-              ) : waStatus === 'waiting_qr' ? (
+              ) : waStatus === 'connecting' ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                  Sincronizando Aparelho...
+                </span>
+              ) : waStatus === 'waiting_qr' || waQr ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                   <RefreshCw className="w-4 h-4 text-amber-600 animate-spin" />
                   Aguardando Leitura do QR
@@ -215,10 +256,10 @@ export default function CanalesPage() {
             </div>
 
             {/* QR Code display area */}
-            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-2xl border border-slate-200 space-y-6">
               {waStatus === 'connected' ? (
                 <div className="text-center space-y-4 max-w-sm py-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-sm">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div>
@@ -226,12 +267,12 @@ export default function CanalesPage() {
                       WhatsApp Conectado e Operando!
                     </h4>
                     <p className="text-xs text-slate-500 mt-1">
-                      O assistente virtual está respondendo ativamente as mensagens recebidas neste número.
+                      O assistente virtual da AndradeStudio está respondendo ativamente as mensagens recebidas neste número.
                     </p>
                   </div>
                   {waPhone && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 shadow-sm">
-                      <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-800 shadow-sm">
+                      <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />
                       +{waPhone}
                     </div>
                   )}
@@ -239,28 +280,53 @@ export default function CanalesPage() {
                     <button
                       onClick={handleDisconnectWhatsApp}
                       disabled={disconnecting}
-                      className="px-4 py-2 text-xs font-medium text-rose-700 bg-white border border-rose-200 rounded-xl hover:bg-rose-50 transition shadow-sm disabled:opacity-50"
+                      className="px-4 py-2 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:opacity-90 transition shadow-sm disabled:opacity-50"
                     >
                       {disconnecting ? 'Desconectando...' : 'Desconectar WhatsApp'}
                     </button>
                   </div>
                 </div>
+              ) : waStatus === 'connecting' ? (
+                <div className="text-center space-y-4 py-8">
+                  <div className="w-16 h-16 rounded-full bg-[#f20d16]/15 border border-[#f20d16]/40 flex items-center justify-center text-[#ff4b52] mx-auto">
+                    <RefreshCw className="w-8 h-8 animate-spin" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900">
+                      Sincronizando com seu WhatsApp...
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                      Mantenha o aplicativo do WhatsApp aberto no seu celular por alguns segundos enquanto concluímos a autenticação criptografada.
+                    </p>
+                  </div>
+                </div>
               ) : waQr ? (
-                <div className="text-center space-y-4">
-                  <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-md inline-block">
+                <div className="text-center space-y-4 w-full">
+                  <div
+                    style={{ backgroundColor: '#ffffff' }}
+                    className="p-4 rounded-2xl border-2 border-white shadow-[0_0_35px_rgba(255,255,255,0.12)] inline-block"
+                  >
                     <img
                       src={waQr}
                       alt="WhatsApp QR Code"
                       className="w-64 h-64 object-contain rounded-lg"
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="text-xs font-bold text-slate-900">
                       Escaneie o QR Code com seu WhatsApp
                     </p>
                     <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-                      O código atualiza-se automaticamente a cada poucos segundos pelo processo worker.
+                      Abra o WhatsApp no celular → Aparelhos Conectados → Conectar um aparelho.
                     </p>
+                    <button
+                      onClick={handleRestartWhatsApp}
+                      disabled={waLoading}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#ff4b52] hover:underline pt-1"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${waLoading ? 'animate-spin' : ''}`} />
+                      <span>Gerar novo QR Code</span>
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -270,10 +336,10 @@ export default function CanalesPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-slate-800">
-                      Sessão desconectada
+                      Pronto para conectar
                     </h4>
                     <p className="text-xs text-slate-500 mt-1 max-w-xs">
-                      Clique no botão abaixo para gerar o código QR de conexão.
+                      Clique no botão abaixo para gerar o código QR de conexão instantaneamente.
                     </p>
                   </div>
                   <button
@@ -282,8 +348,51 @@ export default function CanalesPage() {
                     className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-2 mx-auto"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${waLoading ? 'animate-spin' : ''}`} />
-                    <span>Iniciar Conexão e Gerar QR Code</span>
+                    <span>{waLoading ? 'Gerando QR Code...' : 'Iniciar Conexão e Gerar QR Code'}</span>
                   </button>
+                </div>
+              )}
+
+              {/* Alternative: Pairing Code by Phone Number */}
+              {waStatus !== 'connected' && (
+                <div className="w-full pt-5 border-t border-slate-200/80 max-w-md mx-auto">
+                  <p className="text-xs font-bold text-slate-800 text-center mb-2">
+                    Ou conecte digitando seu número (Código de 8 dígitos):
+                  </p>
+                  <form onSubmit={handleRequestPairingCode} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={pairingPhone}
+                      onChange={(e) => setPairingPhone(e.target.value)}
+                      placeholder="Ex: 5511999998888 (com DDI 55 e DDD)"
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs"
+                    />
+                    <button
+                      type="submit"
+                      disabled={requestingCode || !pairingPhone.trim()}
+                      className="px-3.5 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 shrink-0"
+                    >
+                      {requestingCode ? 'Gerando...' : 'Gerar Código'}
+                    </button>
+                  </form>
+
+                  {pairingError && (
+                    <p className="text-[11px] text-rose-500 mt-2 text-center">{pairingError}</p>
+                  )}
+
+                  {pairingCode && (
+                    <div className="mt-3 p-3.5 rounded-xl bg-white border border-slate-200 text-center space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block">
+                        Digite este código no seu WhatsApp:
+                      </span>
+                      <span className="text-xl font-mono font-extrabold tracking-widest text-[#ff4b52] block">
+                        {pairingCode}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        No WhatsApp: Aparelhos Conectados → Conectar um aparelho → Conectar com número de telefone
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
