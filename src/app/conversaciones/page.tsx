@@ -415,7 +415,15 @@ export default function ConversasPage() {
 
                         {/* Content */}
                         <div className="whitespace-pre-wrap leading-relaxed text-[13px]">
-                          {msg.text}
+                          {msg.text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, i) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+                            }
+                            if (part.startsWith('*') && part.endsWith('*')) {
+                              return <strong key={i} className="font-semibold">{part.slice(1, -1)}</strong>;
+                            }
+                            return part;
+                          })}
                         </div>
 
                         {/* Tools Accordion for Assistant */}

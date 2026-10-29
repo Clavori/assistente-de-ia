@@ -1,8 +1,66 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 
-let cachedModels: any[] = [];
-let cacheTimestamp: number = 0;
+const DEFAULT_MODELS = [
+  {
+    id: 'anthropic/claude-haiku-5.5',
+    name: 'Claude Haiku 5.5 (Recomendado)',
+    provider: 'Anthropic',
+    contextLength: 200000,
+    inputPricePerM: '$0.25',
+    outputPricePerM: '$1.25',
+    rawInputPrice: 0.25,
+    rawOutputPrice: 1.25,
+    isRecommended: true
+  },
+  {
+    id: 'anthropic/claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'Anthropic',
+    contextLength: 200000,
+    inputPricePerM: '$3.00',
+    outputPricePerM: '$15.00',
+    rawInputPrice: 3.0,
+    rawOutputPrice: 15.0,
+    isRecommended: true
+  },
+  {
+    id: 'openai/gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'OpenAI',
+    contextLength: 128000,
+    inputPricePerM: '$0.15',
+    outputPricePerM: '$0.60',
+    rawInputPrice: 0.15,
+    rawOutputPrice: 0.60,
+    isRecommended: true
+  },
+  {
+    id: 'google/gemini-flash-1.5',
+    name: 'Gemini 1.5 Flash',
+    provider: 'Google',
+    contextLength: 1000000,
+    inputPricePerM: '$0.07',
+    outputPricePerM: '$0.30',
+    rawInputPrice: 0.07,
+    rawOutputPrice: 0.30,
+    isRecommended: false
+  },
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B Instruct',
+    provider: 'Meta',
+    contextLength: 128000,
+    inputPricePerM: '$0.12',
+    outputPricePerM: '$0.30',
+    rawInputPrice: 0.12,
+    rawOutputPrice: 0.30,
+    isRecommended: false
+  }
+];
+
+let cachedModels: any[] = DEFAULT_MODELS;
+let cacheTimestamp: number = Date.now();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export async function GET(req: Request) {

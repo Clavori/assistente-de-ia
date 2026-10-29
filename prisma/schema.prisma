@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -19,15 +19,15 @@ model User {
 
 model Business {
   id               String   @id @default(cuid())
-  name             String   @default("Andrade Studio AI")
-  activity         String   @default("Desenvolvimento de Sites, Aplicativos Web/Mobile e Automações Inteligentes com IA")
-  address          String?  @default("Av. Paulista, 1000 - Bela Vista, São Paulo - SP")
+  name             String   @default("AndradeStudio")
+  activity         String   @default("Sites, Aplicativos, Automações com IA e Vídeos para Empresas")
+  address          String?  @default("São Paulo - SP • Atendimento em todo o Brasil")
   phone            String   @default("+55 11 98765-4321")
-  website          String?  @default("https://andradestudio.ai")
+  website          String?  @default("https://andrade-studio.vercel.app")
   hoursConfig      Json?    // Horario por dias da semana
   afterHoursAction String   @default("continue_booking") // continue_booking | take_message
-  agencyName       String   @default("Andrade Studio AI")
-  agencyLogo       String?
+  agencyName       String   @default("AndradeStudio")
+  agencyLogo       String?  @default("/assets/logo.png")
   timeZone         String   @default("America/Sao_Paulo")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -36,10 +36,10 @@ model Business {
 model AssistantConfig {
   id               String   @id @default(cuid())
   name             String   @default("Andrade AI")
-  avatar           String?
+  avatar           String?  @default("/assets/logo.png")
   tone             String   @default("cercano") // cercano, profissional, direto
-  welcomeMessage   String   @default("Olá! Seja bem-vindo à Andrade Studio AI 🚀 Sou o assistente virtual especializado em tecnologia e IA.")
-  instructions     String   @db.Text
+  welcomeMessage   String   @default("Olá! Seja bem-vindo à AndradeStudio 🚀 Sou o assistente virtual especializado em sites premium, apps e automações com IA.")
+  instructions     String
   neverDoRules     Json?    // Array de coisas que nunca deve fazer
   escalateTriggers Json?    // { complaint: true, urgent: true, asksHuman: true, unknownAnswer: true, customRule: "" }
   active           Boolean  @default(true) // Interruptor geral: Assistente ativo / pausado
@@ -51,9 +51,9 @@ model AssistantConfig {
 model Service {
   id              String   @id @default(cuid())
   name            String
-  description     String?  @db.Text
+  description     String?
   durationMinutes Int      @default(30)
-  price           Decimal? @db.Decimal(10, 2)
+  price           Decimal?
   priceFrom       Boolean  @default(false) // "a partir de"
   requiresTriage  Boolean  @default(false) // "requer avaliação prévia"
   createdAt       DateTime @default(now())
@@ -62,8 +62,8 @@ model Service {
 
 model Faq {
   id        String   @id @default(cuid())
-  question  String   @db.Text
-  answer    String   @db.Text
+  question  String
+  answer    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -71,7 +71,7 @@ model Faq {
 model KnowledgeNote {
   id        String   @id @default(cuid())
   title     String   @default("Informações adicionais")
-  content   String   @db.Text
+  content   String
   updatedAt DateTime @updatedAt
 }
 
@@ -80,7 +80,7 @@ model Integration {
   provider       String    @unique // google_calendar, gmail, google_sheets, slack, stripe, webhooks
   status         String    @default("disconnected") // disconnected, connected, error
   accountEmail   String?
-  encryptedData  String?   @db.Text // AES-256-GCM tokens & secrets
+  encryptedData  String?   // AES-256-GCM tokens & secrets
   settings       Json?     // Configurações específicas
   allowedTools   Json?     // Array de ferramentas habilitadas para a IA
   errorMessage   String?
@@ -96,7 +96,7 @@ model Contact {
   email         String?
   channel       String         @default("whatsapp") // whatsapp, web
   interest      String?
-  notes         String?        @db.Text
+  notes         String?
   conversations Conversation[]
   appointments  Appointment[]
   createdAt     DateTime       @default(now())
@@ -121,7 +121,7 @@ model Message {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         String       // customer, assistant, agent
-  text           String       @db.Text
+  text           String
   toolsUsed      Json?        // Registro de ferramentas chamadas neste turno
   createdAt      DateTime     @default(now())
 }
@@ -154,7 +154,7 @@ model ActivityLog {
 model WhatsAppConnection {
   id              String    @id @default("default")
   status          String    @default("disconnected") // disconnected, waiting_qr, connected, error
-  qrCode          String?   @db.Text
+  qrCode          String?
   connectedNumber String?
   lastActiveAt    DateTime?
   updatedAt       DateTime  @updatedAt
@@ -171,8 +171,8 @@ model WorkerCommand {
 model WebChatConfig {
   id             String   @id @default("default")
   enabled        Boolean  @default(true)
-  primaryColor   String   @default("#059669")
-  welcomeMessage String   @default("Olá! Como posso ajudar seu projeto hoje?")
+  primaryColor   String   @default("#f20d16")
+  welcomeMessage String   @default("Olá! Como posso ajudar seu projeto na AndradeStudio hoje?")
   botName        String   @default("Andrade AI")
   position       String   @default("bottom-right")
   updatedAt      DateTime @updatedAt

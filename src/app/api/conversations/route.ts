@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
     if (search) {
       whereClause.OR = [
         ...(whereClause.OR || []),
-        { remoteId: { contains: search, mode: 'insensitive' } },
-        { contact: { name: { contains: search, mode: 'insensitive' } } }
+        { remoteId: { contains: search } },
+        { contact: { name: { contains: search } } }
       ];
     }
 

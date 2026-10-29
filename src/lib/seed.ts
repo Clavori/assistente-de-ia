@@ -23,15 +23,16 @@ export async function seedDatabase() {
     console.log(`✅ Administrador criado: ${adminEmail}`);
   }
 
-  // 2. Business: Andrade Studio AI
+  // 2. Business: AndradeStudio
   const existingBusiness = await prisma.business.findFirst();
   const businessData = {
-    name: 'Andrade Studio AI',
-    activity: 'Desenvolvimento de Sites, Aplicativos Web/Mobile e Automações Inteligentes com IA',
-    address: 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP',
+    name: 'AndradeStudio',
+    activity: 'Sites, Aplicativos, Automações com IA e Vídeos para Empresas',
+    address: 'São Paulo - SP • Atendimento em todo o Brasil',
     phone: '+55 11 98765-4321',
-    website: 'https://andradestudio.ai',
-    agencyName: 'Andrade Studio AI',
+    website: 'https://andrade-studio.vercel.app',
+    agencyName: 'AndradeStudio',
+    agencyLogo: '/assets/logo.png',
     timeZone: 'America/Sao_Paulo',
     hoursConfig: {
       segunda: { open: '09:00', close: '18:00', lunchBreak: '12:00-13:00', active: true },

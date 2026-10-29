@@ -1,8 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
+  swcMinify: true,
   experimental: {
-    serverComponentsExternalPackages: ['@whiskeysockets/baileys', 'qrcode', 'bcryptjs', '@electric-sql/pglite', 'pg']
+    optimizePackageImports: ['lucide-react'],
+    serverComponentsExternalPackages: ['@whiskeysockets/baileys', 'qrcode', 'bcryptjs', '@electric-sql/pglite', 'pg'],
+    outputFileTracingIncludes: {
+      '/api/**/*': ['./prisma/dev.db']
+    }
   }
 };
 

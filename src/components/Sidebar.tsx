@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
@@ -12,7 +13,8 @@ import {
   Activity, 
   Settings,
   LogOut,
-  Building2
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import NextLink from 'next/link';
 
@@ -22,8 +24,8 @@ const NAV_ITEMS = [
   { name: 'Conhecimento', href: '/conocimiento', icon: BookOpen },
   { name: 'Integrações', href: '/integraciones', icon: Blocks, badge: '6' },
   { name: 'Canais', href: '/canales', icon: Radio },
-  { name: 'Testar', href: '/probar', icon: Terminal, highlight: true },
-  { name: 'Conversas', href: '/conversaciones', icon: MessageSquare, badge: '2' },
+  { name: 'Testar IA', href: '/probar', icon: Terminal, highlight: true },
+  { name: 'Conversas', href: '/conversaciones', icon: MessageSquare, badge: '3' },
   { name: 'Atividade', href: '/actividad', icon: Activity },
   { name: 'Configurações', href: '/ajustes', icon: Settings },
 ];
@@ -31,6 +33,18 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [businessName, setBusinessName] = useState('AndradeStudio');
+
+  useEffect(() => {
+    fetch('/api/business')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.business?.name) {
+          setBusinessName(data.business.name);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -39,42 +53,55 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 select-none">
+    <aside className="w-64 bg-[#09090f]/95 backdrop-blur-xl border-r border-white/[0.08] flex flex-col justify-between shrink-0 select-none">
       <div className="flex flex-col flex-1 min-h-0">
         
-        {/* Header / Brand */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              A
+        {/* Header / AndradeStudio Brand */}
+        <div className="h-20 px-5 flex items-center justify-between border-b border-white/[0.08]">
+          <NextLink href="/" className="flex items-center gap-3 group">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/20 shadow-[0_0_22px_rgba(242,13,22,0.45)] group-hover:shadow-[0_0_28px_rgba(242,13,22,0.7)] transition-all shrink-0 bg-[#050508]">
+              <img
+                src="/assets/logo.png"
+                alt="Logo AndradeStudio"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-sm tracking-tight text-slate-900">Atende</span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">IA</span>
+                <span className="font-display font-extrabold text-sm tracking-wide text-white">
+                  AndradeStudio
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#f20d16]/20 text-[#ff4b52] border border-[#f20d16]/40">
+                  AI
+                </span>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wide">
-                Andrade Studio AI
+              <span className="text-[10px] text-[#9ba0b0] font-medium tracking-wide">
+                Plataforma de Atendimento
               </span>
             </div>
-          </div>
+          </NextLink>
         </div>
 
-        {/* Business Selector Pill */}
-        <div className="px-3 pt-3">
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-2xs">
-              <Building2 className="w-4 h-4" />
+        {/* Active Workspace Pill */}
+        <div className="px-3.5 pt-3.5">
+          <div className="p-2.5 rounded-xl bg-[#12121c] border border-white/[0.08] flex items-center gap-2.5 shadow-inner">
+            <div className="w-7 h-7 rounded-lg bg-[#f20d16]/15 border border-[#f20d16]/30 flex items-center justify-center text-[#ff4b52]">
+              <Sparkles className="w-3.5 h-3.5" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Empresa Ativa</span>
-              <span className="text-xs font-semibold text-slate-800 truncate">Clínica Dental Lumen</span>
+              <span className="text-[9px] uppercase font-bold text-[#9ba0b0] tracking-widest">
+                Operação Ativa
+              </span>
+              <span className="text-xs font-semibold text-white truncate">
+                {businessName}
+              </span>
             </div>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -83,27 +110,39 @@ export function Sidebar() {
               <NextLink
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                className={`relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                    ? 'bg-gradient-to-r from-[#f20d16] to-[#b90710] text-white font-semibold shadow-[0_8px_22px_rgba(242,13,22,0.32)] border border-white/15'
                     : item.highlight
-                    ? 'bg-amber-50 text-amber-900 hover:bg-amber-100/70 border border-amber-200/60 font-semibold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-[#f20d16]/10 text-[#ff6b70] hover:bg-[#f20d16]/20 border border-[#f20d16]/30 font-semibold'
+                    : 'text-[#9ba0b0] hover:bg-white/[0.05] hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : item.highlight ? 'text-amber-700' : 'text-slate-400'}`} />
-                  <span>{item.name}</span>
+                  <Icon
+                    className={`w-4 h-4 ${
+                      isActive
+                        ? 'text-white'
+                        : item.highlight
+                        ? 'text-[#ff4b52]'
+                        : 'text-[#8b90a0]'
+                    }`}
+                  />
+                  <span className="tracking-wide">{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  }`}>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                      isActive
+                        ? 'bg-black/30 text-white'
+                        : 'bg-white/[0.06] text-[#c4c8d4] border border-white/[0.08]'
+                    }`}
+                  >
                     {item.badge}
                   </span>
                 )}
                 {item.highlight && !isActive && (
-                  <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-200/70 text-amber-900">
+                  <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#f20d16]/25 text-[#ff8589]">
                     Sandbox
                   </span>
                 )}
@@ -113,17 +152,27 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Footer / User info */}
-      <div className="p-3 border-t border-slate-100 space-y-2">
-        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200/60">
+      {/* Footer / Website Link & User info */}
+      <div className="p-3.5 border-t border-white/[0.08] space-y-2.5">
+        <a
+          href="https://andrade-studio.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-[#9ba0b0] hover:text-white transition-all"
+        >
+          <span>Site Oficial AndradeStudio</span>
+          <ExternalLink className="w-3 h-3 text-[#f20d16]" />
+        </a>
+
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#12121c] border border-white/[0.08]">
           <div className="flex flex-col min-w-0 pr-2">
-            <span className="text-xs font-semibold text-slate-800 truncate">Administrador</span>
-            <span className="text-[10px] text-slate-400 truncate">admin@atiende.local</span>
+            <span className="text-xs font-semibold text-white truncate">Eduardo • Admin</span>
+            <span className="text-[10px] text-[#8b90a0] truncate">admin@atiende.local</span>
           </div>
           <button
             onClick={handleLogout}
             title="Sair da conta"
-            className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-white"
+            className="text-[#8b90a0] hover:text-[#ff4b52] transition-colors p-1.5 rounded-lg hover:bg-white/[0.06]"
           >
             <LogOut className="w-4 h-4" />
           </button>

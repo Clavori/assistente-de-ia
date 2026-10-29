@@ -2,34 +2,198 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.65rem;
-  }
+:root {
+  --bg: #050508;
+  --panel: rgba(13, 13, 20, 0.78);
+  --panel-solid: #0b0b0f;
+  --panel-2: #12121a;
+  --panel-3: #1a1a26;
+  --text: #f5f6fa;
+  --muted: #9ba0b0;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-light: rgba(255, 255, 255, 0.16);
+  --red: #f20d16;
+  --red-hover: #e01b43;
+  --red-glow: rgba(242, 13, 22, 0.25);
+  --glow-gradient: linear-gradient(135deg, #f20d16 0%, #ff4b52 50%, #b90710 100%);
+  --radius: 0.65rem;
 }
 
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 82% 15%, rgba(242, 13, 22, 0.11), transparent 42rem),
+    radial-gradient(circle at 18% 75%, rgba(242, 13, 22, 0.05), transparent 35rem),
+    linear-gradient(135deg, #050508 0%, #0b0811 50%, #030305 100%);
+  color: var(--text);
+  font-family: var(--font-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-outfit), sans-serif;
+}
+
+/* Subtle cyber grid overlay from AndradeStudio */
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(115deg, transparent 0 28%, rgba(242, 13, 22, 0.04) 28.2%, transparent 29% 100%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 72px 72px, 72px 72px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 92%);
+}
+
+/* AndradeStudio Dark Crimson & Silver theme harmonization across all pages */
+.dark .bg-white,
+.dark [class*="bg-white/"] {
+  background-color: #0d0d14 !important;
+  color: #f5f6fa;
+}
+
+.dark .bg-slate-50,
+.dark [class*="bg-slate-50/"] {
+  background-color: #090910 !important;
+}
+
+.dark .bg-slate-100,
+.dark [class*="bg-slate-100/"],
+.dark .bg-slate-200,
+.dark [class*="bg-slate-200/"],
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-200:hover,
+.dark .hover\:bg-slate-50:hover {
+  background-color: #161622 !important;
+  color: #f5f6fa !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-200\/80,
+.dark .border-slate-200\/60,
+.dark .border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f5f6fa !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #c4c8d4 !important;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #8b90a0 !important;
+}
+
+/* Primary action buttons -> AndradeStudio Crimson Glow */
+.dark button.bg-slate-900,
+.dark a.bg-slate-900,
+.dark button.bg-emerald-600,
+.dark a.bg-emerald-600,
+.dark .btn-andrade {
+  background: linear-gradient(135deg, #f20d16 0%, #ff3b42 50%, #b90710 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 8px 24px rgba(242, 13, 22, 0.28) !important;
+}
+
+.dark button.bg-slate-900:hover,
+.dark a.bg-slate-900:hover,
+.dark button.bg-emerald-600:hover,
+.dark a.bg-emerald-600:hover,
+.dark .btn-andrade:hover {
+  box-shadow: 0 12px 30px rgba(242, 13, 22, 0.45) !important;
+  filter: brightness(1.08);
+}
+
+/* Inputs, Textareas, Selects */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.dark textarea,
+.dark select {
+  background-color: #12121c !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f5f6fa !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #f20d16 !important;
+  box-shadow: 0 0 0 2px rgba(242, 13, 22, 0.22) !important;
+  outline: none !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #63687a !important;
+}
+
+/* Translucent status badges in Dark Mode */
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+.dark .text-emerald-800,
+.dark .text-emerald-700,
+.dark .text-emerald-600 {
+  color: #34d399 !important;
+}
+.dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+.dark .bg-amber-50,
+.dark .bg-amber-100\/70 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+.dark .text-amber-900,
+.dark .text-amber-800,
+.dark .text-amber-700 {
+  color: #fbbf24 !important;
+}
+.dark .border-amber-200,
+.dark .border-amber-200\/60 {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+.dark .bg-rose-50,
+.dark .bg-red-50 {
+  background-color: rgba(242, 13, 22, 0.14) !important;
+}
+.dark .text-rose-700,
+.dark .text-rose-600,
+.dark .text-red-700,
+.dark .text-red-600 {
+  color: #ff6b70 !important;
+}
+.dark .border-rose-200,
+.dark .border-red-200 {
+  border-color: rgba(242, 13, 22, 0.32) !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+.dark .text-blue-700,
+.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+.dark .border-blue-200 {
+  border-color: rgba(59, 130, 246, 0.28) !important;
 }
 
 /* Custom scrollbars */
@@ -38,12 +202,12 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #08080c;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #262636;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #f20d16;
 }

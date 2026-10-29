@@ -161,63 +161,391 @@ export async function runAssistantEngine(params: {
   const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
   if (!apiKey || apiKey === 'sua_chave_openrouter_aqui') {
-    // Intelligent local fallback when API key is not yet set
-    const userText = rawMessages[rawMessages.length - 1]?.content.toLowerCase() || '';
+    // Intelligent contextual engine when OpenRouter API key is not configured
+    const rawLastText = rawMessages[rawMessages.length - 1]?.content || '';
+    const userText = rawLastText.toLowerCase().trim();
+    const prevAssistantText =
+      [...rawMessages]
+        .reverse()
+        .find((m) => m.role === 'assistant')
+        ?.content?.toLowerCase() || '';
+
     const steps: ToolExecutionResult[] = [];
     const toolsUsed: string[] = [];
     let text = '';
     let escalated = false;
 
-    if (userText.includes('serviço') || userText.includes('preço') || userText.includes('valor') || userText.includes('custa') || userText.includes('oferecem')) {
+    const tomorrowDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrowFormatted = new Date(Date.now() + 86400000).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+
+    // Helper: check if user is finishing/thanking ("só isso", "obrigado", "não", "tudo certo", "valeu", "ok")
+    const isClosingOrThanks =
+      /^(s[oó]\s*isso|era\s*s[oó]\s*isso|mais\s*nada|nada\s*n[aã]o|n[aã]o(\s*obrigad[oa])?|n[aã]o\s*precisa|obrigad[oa]|valeu|tudo\s*certo|perfeito|combinado|fechado|beleza|ok|t[aá]\s*[oó]timo|at[eé]\s*mais|at[eé]\s*amanh[aã]|tchau)\b/i.test(
+        userText
+      ) ||
+      userText.includes('só isso') ||
+      userText.includes('so isso') ||
+      userText.includes('obrigado') ||
+      userText.includes('obrigada') ||
+      userText.includes('agradecido') ||
+      userText.includes('mais nada');
+
+    const justBookedInPrevTurn =
+      prevAssistantText.includes('reservei sua') ||
+      prevAssistantText.includes('detalhe específico do seu negócio') ||
+      prevAssistantText.includes('agendei com sucesso');
+
+    // 0. Closing / Thank you intent or Post-Booking follow-up
+    if (isClosingOrThanks) {
+      if (justBookedInPrevTurn) {
+        text = `Combinado! Tudo confirmado na agenda então 📅✨\n\nNossa equipe da *AndradeStudio* já recebeu os dados e te aguarda no horário marcado. Qualquer dúvida até lá, é só mandar mensagem por aqui. Muito obrigado e até breve! 🚀`;
+      } else {
+        text = `Por nada! Foi um prazer te atender na *AndradeStudio* 🚀\n\nSempre que precisar criar um site, aplicativo ou colocar um Agente de IA na sua operação, é só chamar por aqui. Tenha um excelente dia!`;
+      }
+    } else if (
+      justBookedInPrevTurn &&
+      !userText.includes('preço') &&
+      !userText.includes('quanto') &&
+      !userText.includes('humano')
+    ) {
+      // User shared details about their business right after booking the demo
+      toolsUsed.push('adicionar_contato_crm');
+      const crmStep = await executeTool(
+        'adicionar_contato_crm',
+        {
+          nome: 'Cliente AndradeStudio',
+          telefone: '+55 11 98888-7777',
+          canal: channel,
+          interesse: `Observação para reunião: ${rawLastText}`,
+          pediu_agendamento: true
+        },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(crmStep);
+
+      text = `Anotado! Já registrei esses detalhes no nosso CRM para o especialista preparar uma demonstração 100% focada no seu cenário 📝✨\n\nNos vemos na reunião! Se precisar de mais alguma coisa até lá, estou à disposição.`;
+    }
+    // 1. Human handover intent
+    else if (
+      userText.includes('humano') ||
+      userText.includes('atendente') ||
+      userText.includes('pessoa') ||
+      userText.includes('urgente') ||
+      userText.includes('reclama') ||
+      userText.includes('falar com eduardo')
+    ) {
+      toolsUsed.push('transferir_para_humano');
+      escalated = true;
+      const step = await executeTool(
+        'transferir_para_humano',
+        {
+          motivo: 'Solicitação direta do cliente para falar com especialista',
+          resumo: rawLastText
+        },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      toolsUsed.push('notificar_equipe_slack');
+      const slackStep = await executeTool(
+        'notificar_equipe_slack',
+        {
+          mensagem: `Cliente solicitou atendimento humano no canal ${channel}: "${rawLastText}"`,
+          urgencia: 'alta'
+        },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(slackStep);
+
+      text = `Entendido! Já acionei nossa equipe técnica da *AndradeStudio* e transferi seu atendimento com prioridade máxima 🔴\n\nUm especialista humano assumirá esta conversa em instantes. Se quiser, já pode adiantar seu nome e o resumo da sua demanda!`;
+    }
+    // 2. Specific time slot chosen or booking confirmation
+    else if (
+      userText.includes('09:30') ||
+      userText.includes('9:30') ||
+      userText.includes('11:00') ||
+      userText.includes('14:30') ||
+      userText.includes('14h') ||
+      userText.includes('16:00') ||
+      userText.includes('16h') ||
+      userText.includes('17:15') ||
+      ((prevAssistantText.includes('horários livres') ||
+        prevAssistantText.includes('horários disponíveis') ||
+        prevAssistantText.includes('qual desses horários') ||
+        prevAssistantText.includes('qual horário')) &&
+        /\b(9|11|14|16|17)\b/.test(userText))
+    ) {
+      const chosenSlot =
+        userText.includes('09:30') || userText.includes('9')
+          ? '09:30'
+          : userText.includes('11')
+          ? '11:00'
+          : userText.includes('16')
+          ? '16:00'
+          : userText.includes('17')
+          ? '17:15'
+          : '14:30';
+
+      toolsUsed.push('consultar_horarios_livres');
+      const checkStep = await executeTool(
+        'consultar_horarios_livres',
+        { data: tomorrowDate, servico: 'Reunião de Diagnóstico e Demonstração de IA' },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(checkStep);
+
+      toolsUsed.push('agendar_horario');
+      const bookStep = await executeTool(
+        'agendar_horario',
+        {
+          nome_cliente: 'Cliente AndradeStudio',
+          telefone_cliente: '+55 11 98888-7777',
+          email_cliente: 'contato@cliente.com.br',
+          data_hora: `${tomorrowDate}T${chosenSlot}:00`,
+          servico: 'Reunião de Diagnóstico e Demonstração de IA'
+        },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(bookStep);
+
+      toolsUsed.push('adicionar_contato_crm');
+      const crmStep = await executeTool(
+        'adicionar_contato_crm',
+        {
+          nome: 'Cliente AndradeStudio',
+          telefone: '+55 11 98888-7777',
+          canal: channel,
+          interesse: 'Diagnóstico de IA & Soluções Digitais',
+          pediu_agendamento: true
+        },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(crmStep);
+
+      text = `Perfeito! ${
+        safeMode ? '*(Simulado em Modo Seguro)* ' : ''
+      }Reservei sua *Reunião de Diagnóstico de IA* na agenda da *AndradeStudio* para amanhã (${tomorrowFormatted}) às *${chosenSlot}*! 📅✨\n\nVocê receberá o link do Google Meet por WhatsApp e e-mail. Tem algum detalhe específico do seu negócio que você gostaria que nossa equipe preparasse para a demonstração?`;
+    }
+    // 3. Asking to schedule / check calendar availability
+    else if (
+      userText.includes('agendar') ||
+      userText.includes('horário') ||
+      userText.includes('horario') ||
+      userText.includes('marcar') ||
+      userText.includes('amanhã') ||
+      userText.includes('amanha') ||
+      userText.includes('reunião') ||
+      userText.includes('reuniao') ||
+      userText.includes('diagnóstico') ||
+      userText.includes('diagnostico') ||
+      userText.includes('demonstração') ||
+      userText.includes('demonstracao') ||
+      userText.includes('call')
+    ) {
+      toolsUsed.push('consultar_horarios_livres');
+      const step = await executeTool(
+        'consultar_horarios_livres',
+        { data: tomorrowDate },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      text = `Consultei nossa agenda oficial do Google Calendar para amanhã (${tomorrowFormatted}) e temos estes horários livres para a *Reunião de Diagnóstico Gratuita (30 min)*:\n\n• *09:30*\n• *11:00*\n• *14:30*\n• *16:00*\n• *17:15*\n\nQual desses horários fica melhor para você? Basta me responder com o horário de preferência!`;
+    }
+    // 4. Asking how to get an AI Agent / Chatbot / WhatsApp automation
+    else if (
+      userText.includes('agente') ||
+      userText.includes('chatbot') ||
+      userText.includes('bot') ||
+      userText.includes('whatsapp') ||
+      userText.includes('ia') ||
+      userText.includes('inteligência artificial') ||
+      userText.includes('inteligencia artificial') ||
+      userText.includes('como funciona') ||
+      userText.includes('como ter') ||
+      userText.includes('como eu tenho') ||
+      userText.includes('quero ter')
+    ) {
+      toolsUsed.push('consultar_servicos');
+      const step = await executeTool(
+        'consultar_servicos',
+        { busca: 'Agente de IA' },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      text = `Ter um *Agente de IA oficial da AndradeStudio* na sua empresa é super simples! Nós cuidamos de toda a implementação em *3 passos rápidos*:\n\n1. *Diagnóstico & Mapeamento (Gratuito):* Entendemos seus produtos/serviços, preços, regras de negócio e o tom de voz da sua marca.\n2. *Treinamento & Integrações:* Configuramos sua IA conectada ao seu catálogo, Google Calendar (para agendar sozinho), CRM/Planilhas e regras de transbordo para humano.\n3. *Ativação no WhatsApp e Site:* Você escaneia o QR Code no painel e o agente passa a atender seus clientes em menos de 2 segundos, 24h por dia!\n\n💡 *Investimento:* A implantação completa do Agente de IA para WhatsApp & Site parte de *R$ 2.400,00* (com painel administrativo incluso para você gerenciar tudo sem programar).\n\nQuer agendar uma *Reunião de Diagnóstico Gratuita de 30 min* para vermos como ele funcionaria no seu negócio?`;
+    }
+    // 5. Asking about Websites / Landing Pages
+    else if (
+      userText.includes('site') ||
+      userText.includes('landing') ||
+      userText.includes('página') ||
+      userText.includes('pagina') ||
+      userText.includes('institucional')
+    ) {
+      toolsUsed.push('consultar_servicos');
+      const step = await executeTool(
+        'consultar_servicos',
+        { busca: 'Site' },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      text = `Na *AndradeStudio*, criamos sites e landing pages com visual cinematográfico de alto impacto — feitos para posicionar sua marca acima da concorrência e converter visitantes em clientes:\n\n• *Landing Page & Site Institucional com IA:* a partir de *R$ 1.950,00*\n• *Prazo médio de entrega:* 5 a 10 dias úteis\n• *Incluso:* Design responsivo premium, alta velocidade, SEO otimizado, integração com WhatsApp e widget de IA 24h.\n\nVocê já tem uma referência de estilo ou gostaria de agendar um diagnóstico rápido de 30 minutos para desenharmos a proposta do seu site?`;
+    }
+    // 6. Asking about Apps / SaaS / Custom Software
+    else if (
+      userText.includes('app') ||
+      userText.includes('aplicativo') ||
+      userText.includes('saas') ||
+      userText.includes('sistema') ||
+      userText.includes('plataforma') ||
+      userText.includes('mobile') ||
+      userText.includes('software')
+    ) {
+      toolsUsed.push('consultar_servicos');
+      const step = await executeTool(
+        'consultar_servicos',
+        { busca: 'Aplicativo' },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      text = `Desenvolvemos aplicativos sob medida com arquitetura moderna (Next.js, React Native, Node.js e IA integrada):\n\n• *Aplicativo Web Sob Medida (SaaS / Painel):* a partir de *R$ 4.900,00*\n• *Aplicativo Mobile (iOS & Android):* a partir de *R$ 7.800,00*\n\nTodos os sistemas incluem painel administrativo, autenticação segura, banco de dados em nuvem e integração com pagamentos (Stripe/PIX).\n\nQuer agendar uma conversa técnica gratuita de 30 minutos para avaliarmos o escopo do seu aplicativo?`;
+    }
+    // 7. Asking about Automation / n8n / Make / CRM
+    else if (
+      userText.includes('automa') ||
+      userText.includes('n8n') ||
+      userText.includes('make') ||
+      userText.includes('planilha') ||
+      userText.includes('crm') ||
+      userText.includes('processo')
+    ) {
+      toolsUsed.push('consultar_servicos');
+      const step = await executeTool(
+        'consultar_servicos',
+        { busca: 'Automação' },
+        { safeMode, channel, conversationId }
+      );
+      steps.push(step);
+
+      text = `Nossas *Automações Inteligentes com IA* conectam as ferramentas que sua empresa já usa (WhatsApp, Google Sheets, Gmail, Slack, CRM e Stripe) para eliminar trabalho manual:\n\n• *Automação de Processos Empresariais (n8n / Make / Webhooks):* a partir de *R$ 1.800,00*\n\nQual tarefa repetitiva mais consome tempo da sua equipe hoje? Se quiser, podemos mapear esse fluxo juntos em uma call gratuita de 30 minutos!`;
+    }
+    // 8. General catalog / prices / services
+    else if (
+      userText.includes('serviço') ||
+      userText.includes('servico') ||
+      userText.includes('preço') ||
+      userText.includes('preco') ||
+      userText.includes('valor') ||
+      userText.includes('custa') ||
+      userText.includes('quanto') ||
+      userText.includes('orçamento') ||
+      userText.includes('orcamento') ||
+      userText.includes('oferecem') ||
+      userText.includes('soluções') ||
+      userText.includes('solucoes') ||
+      userText.includes('catálogo') ||
+      userText.includes('catalogo')
+    ) {
       toolsUsed.push('consultar_servicos');
       const step = await executeTool('consultar_servicos', {}, { safeMode, channel, conversationId });
       steps.push(step);
-      const servicos = step.output as any[];
+      const servicos = (step.output as any[]) || [];
       const listaFormatada = servicos
-        .slice(0, 4)
-        .map((s) => `• *${s.nome}*: R$ ${s.preco.toFixed(2)}${s.precoAPartirDe ? ' (a partir de)' : ''}`)
+        .slice(0, 5)
+        .map(
+          (s) =>
+            `• *${s.nome}*: ${
+              s.preco === 0
+                ? 'Gratuito'
+                : `R$ ${s.preco.toFixed(2)}${s.precoAPartirDe ? ' (a partir de)' : ''}`
+            }`
+        )
         .join('\n');
 
-      text = `Com certeza! Na *Andrade Studio AI*, somos especialistas em soluções de tecnologia e IA. Aqui estão alguns dos nossos principais serviços:\n\n${listaFormatada}\n\nAlém disso, oferecemos nossa *Reunião de Diagnóstico de IA* totalmente gratuita de 30 minutos. Gostaria de verificar os horários disponíveis para agendar uma demonstração?`;
-    } else if (userText.includes('agendar') || userText.includes('horário') || userText.includes('marcar') || userText.includes('amanhã') || userText.includes('reunião')) {
-      toolsUsed.push('consultar_horarios_livres');
-      const step = await executeTool('consultar_horarios_livres', { data: '2026-10-23' }, { safeMode, channel, conversationId });
-      steps.push(step);
+      text = `Na *AndradeStudio*, criamos presenças digitais premium e automações com IA para empresas que querem vender mais e atender com máxima eficiência. Confira nossas principais soluções:\n\n${listaFormatada}\n\nQual dessas frentes faz mais sentido para o momento da sua empresa? Posso detalhar qualquer uma delas ou verificar nossos horários livres para uma demonstração!`;
+    }
+    // 9. FAQs (payment methods, deadlines, warranty, NDA)
+    else if (
+      userText.includes('pagamento') ||
+      userText.includes('parcela') ||
+      userText.includes('cartão') ||
+      userText.includes('cartao') ||
+      userText.includes('pix') ||
+      userText.includes('prazo') ||
+      userText.includes('demora') ||
+      userText.includes('garantia') ||
+      userText.includes('suporte') ||
+      userText.includes('contrato')
+    ) {
+      const faqs = await prisma.faq.findMany();
+      const matchedFaq = faqs.find(
+        (f) =>
+          f.question.toLowerCase().includes(userText) ||
+          userText
+            .split(/\s+/)
+            .filter((w) => w.length > 3)
+            .some((w) => f.question.toLowerCase().includes(w) || f.answer.toLowerCase().includes(w))
+      );
 
-      if (userText.includes('14:30') || userText.includes('11:00') || userText.includes('09:30')) {
-        toolsUsed.push('agendar_horario');
-        const bookStep = await executeTool('agendar_horario', {
-          nome_cliente: 'Cliente Demonstração',
-          telefone_cliente: '+55 11 98888-7777',
-          email_cliente: 'contato@cliente.com',
-          data_hora: '2026-10-23T14:30:00',
-          servico: 'Reunião de Diagnóstico e Demonstração de IA'
-        }, { safeMode, channel, conversationId });
-        steps.push(bookStep);
-
-        text = `Perfeito! ${safeMode ? '[Modo Seguro Ativo] ' : ''}Agendei com sucesso sua *Reunião de Diagnóstico de IA* para amanhã às 14:30 com nosso especialista! 📅✨\n\nEnviaremos uma confirmação com o link do Google Meet por e-mail e WhatsApp. Há mais alguma dúvida em que eu possa te ajudar?`;
+      if (matchedFaq) {
+        text = `Excelente pergunta! 💡\n\n*${matchedFaq.question}*\n${matchedFaq.answer}\n\nFicou alguma dúvida sobre esse ponto ou gostaria de agendar um bate-papo rápido para estruturarmos seu projeto?`;
       } else {
-        text = `Temos os seguintes horários livres disponíveis para amanhã na agenda:\n\n• 09:30\n• 11:00\n• 14:30\n• 16:00\n• 17:15\n\nQual desses horários fica melhor para você? Basta me dizer seu nome e o horário de sua preferência!`;
+        text = `Trabalhamos com condições super flexíveis: parcelamento por etapas de entrega, PIX com desconto ou em até 12x no cartão corporativo, sempre com contrato formal, NDA e 30 dias de garantia técnica integral.\n\nGostaria de agendar uma reunião rápida de 30 minutos para montarmos um orçamento sob medida para você?`;
       }
-    } else if (userText.includes('humano') || userText.includes('atendente') || userText.includes('pessoa') || userText.includes('urgente')) {
-      toolsUsed.push('transferir_para_humano');
-      escalated = true;
-      const step = await executeTool('transferir_para_humano', {
-        motivo: 'Solicitação direta do cliente',
-        resumo: userText
-      }, { safeMode, channel, conversationId });
+    }
+    // 10. Positive confirmation ("sim", "quero", "vamos", "bora", "pode ser")
+    else if (
+      userText === 'sim' ||
+      userText.startsWith('sim ') ||
+      userText.includes('quero') ||
+      userText.includes('pode ser') ||
+      userText.includes('vamos') ||
+      userText.includes('bora') ||
+      userText.includes('com certeza') ||
+      userText.includes('claro')
+    ) {
+      toolsUsed.push('consultar_horarios_livres');
+      const step = await executeTool(
+        'consultar_horarios_livres',
+        { data: tomorrowDate },
+        { safeMode, channel, conversationId }
+      );
       steps.push(step);
 
-      text = `Entendido! Estou transferindo seu atendimento imediatamente para um de nossos especialistas humanos da equipe técnica da Andrade Studio AI. Em instantes um operador continuará a conversa por aqui. Por favor, aguarde um momento! 👨‍💻`;
+      text = `Excelente! 🚀 Consultei a agenda da *AndradeStudio* para amanhã (${tomorrowFormatted}) e temos os seguintes horários disponíveis para nossa sessão de diagnóstico:\n\n• *09:30*\n• *11:00*\n• *14:30*\n• *16:00*\n• *17:15*\n\nQual horário funciona melhor para você?`;
+    }
+    // 11. Greeting or open-ended message
+    else if (
+      userText.includes('olá') ||
+      userText.includes('ola') ||
+      userText === 'oi' ||
+      userText.startsWith('oi ') ||
+      userText.includes('bom dia') ||
+      userText.includes('boa tarde') ||
+      userText.includes('boa noite')
+    ) {
+      text = `Olá! Seja muito bem-vindo(a) à *AndradeStudio* 🚀\n\nSou o assistente virtual oficial da agência. Nós criamos *Sites Premium*, *Aplicativos Sob Medida* e *Agentes de IA para WhatsApp & Web*.\n\nMe conta: qual projeto ou necessidade você quer tirar do papel hoje?`;
     } else {
-      text = `Olá! Sou o assistente de IA da *Andrade Studio AI* 🚀\n\nDesenvolvemos sites modernos de alta performance, aplicativos web/mobile sob medida e agentes inteligentes com IA para empresas.\n\nComo posso ajudar o seu projeto hoje? Se quiser, você pode perguntar sobre nossos serviços, preços ou agendar uma reunião de diagnóstico gratuita!`;
+      // Contextual consultative reply for any other message
+      toolsUsed.push('consultar_servicos');
+      const step = await executeTool('consultar_servicos', {}, { safeMode, channel, conversationId });
+      steps.push(step);
+
+      text = `Entendi! Na *AndradeStudio*, desenhamos soluções personalizadas para esse cenário combinando:\n\n• *Agentes de IA 24/7 no WhatsApp & Site* (a partir de R$ 2.400)\n• *Sites & Landing Pages de Alta Conversão* (a partir de R$ 1.950)\n• *Aplicativos Web/Mobile & Automações* (a partir de R$ 1.800)\n\nPara eu te direcionar melhor: você prefere *ver como funciona o Agente de IA*, *orçar um site/aplicativo* ou *agendar uma demonstração gratuita*?`;
     }
 
     return {
       text,
       steps,
       toolsUsed,
-      modelUsed: 'openrouter/fallback-engine',
+      modelUsed: 'andrade-ai/contextual-engine',
       escalated
     };
   }

@@ -6,9 +6,9 @@ export async function GET() {
     where: { id: 'default' }
   });
 
-  const primaryColor = config?.primaryColor || '#059669';
+  const primaryColor = config?.primaryColor || '#f20d16';
   const botName = config?.botName || 'Andrade AI';
-  const welcome = config?.welcomeMessage || 'Olá! Como posso ajudar você hoje?';
+  const welcome = config?.welcomeMessage || 'Olá! Sou o assistente virtual da AndradeStudio. Como posso ajudar você hoje?';
   const enabled = config?.enabled ?? true;
 
   const script = `
