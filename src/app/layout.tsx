@@ -20,6 +20,11 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'AndradeStudio AI — Plataforma de Atendimento & Automação',
   description: 'Painel executivo de IA da AndradeStudio: atendimento inteligente no WhatsApp e Web, qualificação de leads e agendamentos automáticos.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/assets/logo.png',
+    apple: '/assets/logo.png'
+  }
 };
 
 export default function RootLayout({

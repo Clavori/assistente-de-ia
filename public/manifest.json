@@ -1,0 +1,21 @@
+{
+  "name": "AndradeStudio AI — Plataforma de Atendimento",
+  "short_name": "AndradeStudio AI",
+  "description": "Painel Executivo de Agentes de IA, WhatsApp e Automação Comercial da AndradeStudio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#f20d16",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -72,7 +72,9 @@ export default function IntegracoesPage() {
 
   // Google Cloud OAuth 2.0 Credentials Drawer
   const [showGoogleCredsModal, setShowGoogleCredsModal] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientId, setGoogleClientId] = useState(
+    '357298778550-34pcd4jjp8otp49g9tn1fhmsqaij8hiu.apps.googleusercontent.com'
+  );
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [savingGoogleCreds, setSavingGoogleCreds] = useState(false);
   const [copiedRedirect, setCopiedRedirect] = useState(false);
