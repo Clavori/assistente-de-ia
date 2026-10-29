@@ -409,7 +409,7 @@ export async function executeTool(
         } else {
           await prisma.contact.create({
             data: {
-              name,
+              name: nome,
               phone: telefone,
               email: email || null,
               channel: origCanal || channel,
