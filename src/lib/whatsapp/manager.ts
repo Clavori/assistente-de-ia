@@ -255,7 +255,8 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
       syncFullHistory: false,
       markOnlineOnConnect: true,
       connectTimeoutMs: 30000,
-      defaultQueryTimeoutMs: 30000
+      defaultQueryTimeoutMs: 30000,
+      getMessage: async () => ({ conversation: 'AndradeStudio AI' })
     });
 
     state.sock = sock;
@@ -376,15 +377,6 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
           }
         }
 
-        // Ignore old history messages when m.type === 'append' (only process messages from the last 3 minutes)
-        const rawTs = Number(msg.messageTimestamp || 0);
-        if (rawTs > 0) {
-          const msgEpochMs = rawTs < 1e12 ? rawTs * 1000 : rawTs;
-          if (Date.now() - msgEpochMs > 180_000) {
-            continue;
-          }
-        }
-
         const remoteJid = msg.key?.remoteJid;
         if (
           !remoteJid ||
@@ -400,14 +392,15 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
 
         state.processingCount++;
         try {
-          const rawSender =
+          const altJid =
+            (msg.key as any)?.remoteJidAlt ||
             (msg.key as any)?.senderPn ||
             msg.key?.participant ||
             remoteJid;
-          const senderPhone = String(rawSender).split('@')[0].split(':')[0];
+          const senderPhone = String(altJid).split('@')[0].split(':')[0];
           const senderName = msg.pushName || `Cliente ${senderPhone.slice(-4)}`;
 
-          console.log(`[WhatsApp] 📩 Mensagem de ${senderName} (${remoteJid}): "${text}"`);
+          console.log(`[WhatsApp] 📩 Mensagem recebida de ${senderName} (${remoteJid}): "${text}"`);
 
           const config = await prisma.assistantConfig.findFirst();
           if (config && !config.active) {
@@ -483,7 +476,15 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
             conversationId: conversation.id
           });
 
-          await sock.sendMessage(remoteJid, { text: aiResult.text });
+          try {
+            await sock.sendMessage(remoteJid, { text: aiResult.text });
+          } catch (sendErr) {
+            if (altJid && altJid !== remoteJid && String(altJid).includes('@s.whatsapp.net')) {
+              await sock.sendMessage(String(altJid), { text: aiResult.text });
+            } else {
+              throw sendErr;
+            }
+          }
           console.log(`[WhatsApp] ✅ Resposta enviada para ${senderName}: "${aiResult.text.slice(0, 60)}..."`);
 
           await prisma.message.create({

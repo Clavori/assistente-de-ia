@@ -17,13 +17,11 @@ export async function GET(req: NextRequest) {
     const heartbeat = url.searchParams.get('heartbeat') === '1';
     const cookieStore = cookies();
     const savedWaCookie = cookieStore.get(WA_COOKIE)?.value;
-    const savedPhoneFromQuery = url.searchParams.get('connectedPhone');
 
     const data = await getWhatsAppStatus({ heartbeat });
 
-    // If this container just connected, set the persistent cookie
     if (data.status === 'connected') {
-      const phone = data.connectedNumber || savedWaCookie || savedPhoneFromQuery || null;
+      const phone = data.connectedNumber || savedWaCookie || null;
       const res = NextResponse.json({
         ...data,
         status: 'connected',
@@ -39,21 +37,6 @@ export async function GET(req: NextRequest) {
         });
       }
       return res;
-    }
-
-    // If the user already connected in this session (cookie or query present)
-    // and this request hit a secondary serverless instance, preserve the connected state
-    // instead of flashing a QR code when switching pages!
-    const knownPhone = savedWaCookie || savedPhoneFromQuery;
-    if (knownPhone) {
-      return NextResponse.json({
-        status: 'connected',
-        isSocketOpen: true,
-        qrCode: null,
-        pairingCode: null,
-        connectedNumber: knownPhone,
-        lastActiveAt: new Date().toISOString()
-      });
     }
 
     return NextResponse.json(data);
