@@ -31,7 +31,7 @@ export async function buildSystemPrompt(): Promise<string> {
     prisma.faq.findMany({ take: 15 })
   ]);
 
-  const businessName = business?.name || 'Andrade Studio AI';
+  const businessName = business?.name || 'AndradeStudio AI';
   const activity = business?.activity || 'Desenvolvimento de Sites, Aplicativos Web/Mobile e Automações com IA';
   const phone = business?.phone || '+55 11 98765-4321';
   const address = business?.address || 'Av. Paulista, 1000 - Bela Vista, São Paulo - SP';
@@ -201,9 +201,9 @@ export async function runAssistantEngine(params: {
     // 0. Closing / Thank you intent or Post-Booking follow-up
     if (isClosingOrThanks) {
       if (justBookedInPrevTurn) {
-        text = `Combinado! Tudo confirmado na agenda então 📅✨\n\nNossa equipe da *AndradeStudio* já recebeu os dados e te aguarda no horário marcado. Qualquer dúvida até lá, é só mandar mensagem por aqui. Muito obrigado e até breve! 🚀`;
+        text = `Combinado! Tudo confirmado na agenda então 📅✨\n\nNossa equipe da *AndradeStudio AI* já recebeu os dados e te aguarda no horário marcado. Qualquer dúvida até lá, é só mandar mensagem por aqui. Muito obrigado e até breve! 🚀`;
       } else {
-        text = `Por nada! Foi um prazer te atender na *AndradeStudio* 🚀\n\nSempre que precisar criar um site, aplicativo ou colocar um Agente de IA na sua operação, é só chamar por aqui. Tenha um excelente dia!`;
+        text = `Por nada! Foi um prazer te atender na *AndradeStudio AI* 🚀\n\nSempre que precisar criar um site, aplicativo ou colocar um Agente de IA na sua operação, é só chamar por aqui. Tenha um excelente dia!`;
       }
     } else if (
       justBookedInPrevTurn &&
@@ -216,7 +216,7 @@ export async function runAssistantEngine(params: {
       const crmStep = await executeTool(
         'adicionar_contato_crm',
         {
-          nome: 'Cliente AndradeStudio',
+          nome: 'Cliente AndradeStudio AI',
           telefone: '+55 11 98888-7777',
           canal: channel,
           interesse: `Observação para reunião: ${rawLastText}`,
@@ -260,7 +260,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(slackStep);
 
-      text = `Entendido! Já acionei nossa equipe técnica da *AndradeStudio* e transferi seu atendimento com prioridade máxima 🔴\n\nUm especialista humano assumirá esta conversa em instantes. Se quiser, já pode adiantar seu nome e o resumo da sua demanda!`;
+      text = `Entendido! Já acionei nossa equipe técnica da *AndradeStudio AI* e transferi seu atendimento com prioridade máxima 🔴\n\nUm especialista humano assumirá esta conversa em instantes. Se quiser, já pode adiantar seu nome e o resumo da sua demanda!`;
     }
     // 2. Specific time slot chosen or booking confirmation
     else if (
@@ -301,7 +301,7 @@ export async function runAssistantEngine(params: {
       const bookStep = await executeTool(
         'agendar_horario',
         {
-          nome_cliente: 'Cliente AndradeStudio',
+          nome_cliente: 'Cliente AndradeStudio AI',
           telefone_cliente: '+55 11 98888-7777',
           email_cliente: 'contato@cliente.com.br',
           data_hora: `${tomorrowDate}T${chosenSlot}:00`,
@@ -315,7 +315,7 @@ export async function runAssistantEngine(params: {
       const crmStep = await executeTool(
         'adicionar_contato_crm',
         {
-          nome: 'Cliente AndradeStudio',
+          nome: 'Cliente AndradeStudio AI',
           telefone: '+55 11 98888-7777',
           canal: channel,
           interesse: 'Diagnóstico de IA & Soluções Digitais',
@@ -327,7 +327,7 @@ export async function runAssistantEngine(params: {
 
       text = `Perfeito! ${
         safeMode ? '*(Simulado em Modo Seguro)* ' : ''
-      }Reservei sua *Reunião de Diagnóstico de IA* na agenda da *AndradeStudio* para amanhã (${tomorrowFormatted}) às *${chosenSlot}*! 📅✨\n\nVocê receberá o link do Google Meet por WhatsApp e e-mail. Tem algum detalhe específico do seu negócio que você gostaria que nossa equipe preparasse para a demonstração?`;
+      }Reservei sua *Reunião de Diagnóstico de IA* na agenda da *AndradeStudio AI* para amanhã (${tomorrowFormatted}) às *${chosenSlot}*! 📅✨\n\nVocê receberá o link do Google Meet por WhatsApp e e-mail. Tem algum detalhe específico do seu negócio que você gostaria que nossa equipe preparasse para a demonstração?`;
     }
     // 3. Asking to schedule / check calendar availability
     else if (
@@ -377,7 +377,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(step);
 
-      text = `Ter um *Agente de IA oficial da AndradeStudio* na sua empresa é super simples! Nós cuidamos de toda a implementação em *3 passos rápidos*:\n\n1. *Diagnóstico & Mapeamento (Gratuito):* Entendemos seus produtos/serviços, preços, regras de negócio e o tom de voz da sua marca.\n2. *Treinamento & Integrações:* Configuramos sua IA conectada ao seu catálogo, Google Calendar (para agendar sozinho), CRM/Planilhas e regras de transbordo para humano.\n3. *Ativação no WhatsApp e Site:* Você escaneia o QR Code no painel e o agente passa a atender seus clientes em menos de 2 segundos, 24h por dia!\n\n💡 *Investimento:* A implantação completa do Agente de IA para WhatsApp & Site parte de *R$ 2.400,00* (com painel administrativo incluso para você gerenciar tudo sem programar).\n\nQuer agendar uma *Reunião de Diagnóstico Gratuita de 30 min* para vermos como ele funcionaria no seu negócio?`;
+      text = `Ter um *Agente de IA oficial da AndradeStudio AI* na sua empresa é super simples! Nós cuidamos de toda a implementação em *3 passos rápidos*:\n\n1. *Diagnóstico & Mapeamento (Gratuito):* Entendemos seus produtos/serviços, preços, regras de negócio e o tom de voz da sua marca.\n2. *Treinamento & Integrações:* Configuramos sua IA conectada ao seu catálogo, Google Calendar (para agendar sozinho), CRM/Planilhas e regras de transbordo para humano.\n3. *Ativação no WhatsApp e Site:* Você escaneia o QR Code no painel e o agente passa a atender seus clientes em menos de 2 segundos, 24h por dia!\n\n💡 *Investimento:* A implantação completa do Agente de IA para WhatsApp & Site parte de *R$ 2.400,00* (com painel administrativo incluso para você gerenciar tudo sem programar).\n\nQuer agendar uma *Reunião de Diagnóstico Gratuita de 30 min* para vermos como ele funcionaria no seu negócio?`;
     }
     // 5. Asking about Websites / Landing Pages
     else if (
@@ -395,7 +395,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(step);
 
-      text = `Na *AndradeStudio*, criamos sites e landing pages com visual cinematográfico de alto impacto — feitos para posicionar sua marca acima da concorrência e converter visitantes em clientes:\n\n• *Landing Page & Site Institucional com IA:* a partir de *R$ 1.950,00*\n• *Prazo médio de entrega:* 5 a 10 dias úteis\n• *Incluso:* Design responsivo premium, alta velocidade, SEO otimizado, integração com WhatsApp e widget de IA 24h.\n\nVocê já tem uma referência de estilo ou gostaria de agendar um diagnóstico rápido de 30 minutos para desenharmos a proposta do seu site?`;
+      text = `Na *AndradeStudio AI*, criamos sites e landing pages com visual cinematográfico de alto impacto — feitos para posicionar sua marca acima da concorrência e converter visitantes em clientes:\n\n• *Landing Page & Site Institucional com IA:* a partir de *R$ 1.950,00*\n• *Prazo médio de entrega:* 5 a 10 dias úteis\n• *Incluso:* Design responsivo premium, alta velocidade, SEO otimizado, integração com WhatsApp e widget de IA 24h.\n\nVocê já tem uma referência de estilo ou gostaria de agendar um diagnóstico rápido de 30 minutos para desenharmos a proposta do seu site?`;
     }
     // 6. Asking about Apps / SaaS / Custom Software
     else if (
@@ -415,7 +415,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(step);
 
-      text = `Desenvolvemos aplicativos sob medida com arquitetura moderna (Next.js, React Native, Node.js e IA integrada):\n\n• *Aplicativo Web Sob Medida (SaaS / Painel):* a partir de *R$ 4.900,00*\n• *Aplicativo Mobile (iOS & Android):* a partir de *R$ 7.800,00*\n\nTodos os sistemas incluem painel administrativo, autenticação segura, banco de dados em nuvem e integração com pagamentos (Stripe/PIX).\n\nQuer agendar uma conversa técnica gratuita de 30 minutos para avaliarmos o escopo do seu aplicativo?`;
+      text = `Desenvolvemos aplicativos sob medida na *AndradeStudio AI* com arquitetura moderna (Next.js, React Native, Node.js e IA integrada):\n\n• *Aplicativo Web Sob Medida (SaaS / Painel):* a partir de *R$ 4.900,00*\n• *Aplicativo Mobile (iOS & Android):* a partir de *R$ 7.800,00*\n\nTodos os sistemas incluem painel administrativo, autenticação segura, banco de dados em nuvem e integração com pagamentos (Stripe/PIX).\n\nQuer agendar uma conversa técnica gratuita de 30 minutos para avaliarmos o escopo do seu aplicativo?`;
     }
     // 7. Asking about Automation / n8n / Make / CRM
     else if (
@@ -434,7 +434,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(step);
 
-      text = `Nossas *Automações Inteligentes com IA* conectam as ferramentas que sua empresa já usa (WhatsApp, Google Sheets, Gmail, Slack, CRM e Stripe) para eliminar trabalho manual:\n\n• *Automação de Processos Empresariais (n8n / Make / Webhooks):* a partir de *R$ 1.800,00*\n\nQual tarefa repetitiva mais consome tempo da sua equipe hoje? Se quiser, podemos mapear esse fluxo juntos em uma call gratuita de 30 minutos!`;
+      text = `Nossas *Automações Inteligentes da AndradeStudio AI* conectam as ferramentas que sua empresa já usa (WhatsApp, Google Sheets, Gmail, Slack, CRM e Stripe) para eliminar trabalho manual:\n\n• *Automação de Processos Empresariais (n8n / Make / Webhooks):* a partir de *R$ 1.800,00*\n\nQual tarefa repetitiva mais consome tempo da sua equipe hoje? Se quiser, podemos mapear esse fluxo juntos em uma call gratuita de 30 minutos!`;
     }
     // 8. General catalog / prices / services
     else if (
@@ -469,7 +469,7 @@ export async function runAssistantEngine(params: {
         )
         .join('\n');
 
-      text = `Na *AndradeStudio*, criamos presenças digitais premium e automações com IA para empresas que querem vender mais e atender com máxima eficiência. Confira nossas principais soluções:\n\n${listaFormatada}\n\nQual dessas frentes faz mais sentido para o momento da sua empresa? Posso detalhar qualquer uma delas ou verificar nossos horários livres para uma demonstração!`;
+      text = `Na *AndradeStudio AI*, criamos presenças digitais premium e automações com IA para empresas que querem vender mais e atender com máxima eficiência. Confira nossas principais soluções:\n\n${listaFormatada}\n\nQual dessas frentes faz mais sentido para o momento da sua empresa? Posso detalhar qualquer uma delas ou verificar nossos horários livres para uma demonstração!`;
     }
     // 9. FAQs (payment methods, deadlines, warranty, NDA)
     else if (
@@ -497,7 +497,7 @@ export async function runAssistantEngine(params: {
       if (matchedFaq) {
         text = `Excelente pergunta! 💡\n\n*${matchedFaq.question}*\n${matchedFaq.answer}\n\nFicou alguma dúvida sobre esse ponto ou gostaria de agendar um bate-papo rápido para estruturarmos seu projeto?`;
       } else {
-        text = `Trabalhamos com condições super flexíveis: parcelamento por etapas de entrega, PIX com desconto ou em até 12x no cartão corporativo, sempre com contrato formal, NDA e 30 dias de garantia técnica integral.\n\nGostaria de agendar uma reunião rápida de 30 minutos para montarmos um orçamento sob medida para você?`;
+        text = `Trabalhamos com condições super flexíveis na *AndradeStudio AI*: parcelamento por etapas de entrega, PIX com desconto ou em até 12x no cartão corporativo, sempre com contrato formal, NDA e 30 dias de garantia técnica integral.\n\nGostaria de agendar uma reunião rápida de 30 minutos para montarmos um orçamento sob medida para você?`;
       }
     }
     // 10. Positive confirmation ("sim", "quero", "vamos", "bora", "pode ser")
@@ -519,7 +519,7 @@ export async function runAssistantEngine(params: {
       );
       steps.push(step);
 
-      text = `Excelente! 🚀 Consultei a agenda da *AndradeStudio* para amanhã (${tomorrowFormatted}) e temos os seguintes horários disponíveis para nossa sessão de diagnóstico:\n\n• *09:30*\n• *11:00*\n• *14:30*\n• *16:00*\n• *17:15*\n\nQual horário funciona melhor para você?`;
+      text = `Excelente! 🚀 Consultei a agenda da *AndradeStudio AI* para amanhã (${tomorrowFormatted}) e temos os seguintes horários disponíveis para nossa sessão de diagnóstico:\n\n• *09:30*\n• *11:00*\n• *14:30*\n• *16:00*\n• *17:15*\n\nQual horário funciona melhor para você?`;
     }
     // 11. Greeting or open-ended message
     else if (
@@ -531,14 +531,14 @@ export async function runAssistantEngine(params: {
       userText.includes('boa tarde') ||
       userText.includes('boa noite')
     ) {
-      text = `Olá! Seja muito bem-vindo(a) à *AndradeStudio* 🚀\n\nSou o assistente virtual oficial da agência. Nós criamos *Sites Premium*, *Aplicativos Sob Medida* e *Agentes de IA para WhatsApp & Web*.\n\nMe conta: qual projeto ou necessidade você quer tirar do papel hoje?`;
+      text = `Olá! Seja muito bem-vindo(a) à *AndradeStudio AI* 🚀\n\nSou o assistente virtual oficial da agência. Nós criamos *Sites Premium*, *Aplicativos Sob Medida* e *Agentes de IA para WhatsApp & Web*.\n\nMe conta: qual projeto ou necessidade você quer tirar do papel hoje?`;
     } else {
       // Contextual consultative reply for any other message
       toolsUsed.push('consultar_servicos');
       const step = await executeTool('consultar_servicos', {}, { safeMode, channel, conversationId });
       steps.push(step);
 
-      text = `Entendi! Na *AndradeStudio*, desenhamos soluções personalizadas para esse cenário combinando:\n\n• *Agentes de IA 24/7 no WhatsApp & Site* (a partir de R$ 2.400)\n• *Sites & Landing Pages de Alta Conversão* (a partir de R$ 1.950)\n• *Aplicativos Web/Mobile & Automações* (a partir de R$ 1.800)\n\nPara eu te direcionar melhor: você prefere *ver como funciona o Agente de IA*, *orçar um site/aplicativo* ou *agendar uma demonstração gratuita*?`;
+      text = `Entendi! Na *AndradeStudio AI*, desenhamos soluções personalizadas para esse cenário combinando:\n\n• *Agentes de IA 24/7 no WhatsApp & Site* (a partir de R$ 2.400)\n• *Sites & Landing Pages de Alta Conversão* (a partir de R$ 1.950)\n• *Aplicativos Web/Mobile & Automações* (a partir de R$ 1.800)\n\nPara eu te direcionar melhor: você prefere *ver como funciona o Agente de IA*, *orçar um site/aplicativo* ou *agendar uma demonstração gratuita*?`;
     }
 
     return {

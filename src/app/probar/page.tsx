@@ -74,7 +74,7 @@ export default function ProbarPage() {
               role: 'assistant',
               content:
                 data.welcomeMessage ||
-                'Olá! Seja bem-vindo à AndradeStudio 🚀 Sou o assistente virtual especializado em sites premium, apps e automações com IA. Como posso ajudar seu projeto hoje?',
+                'Olá! Seja bem-vindo à *AndradeStudio AI* 🚀 Sou o assistente virtual especializado em sites premium, apps e automações com IA. Como posso ajudar seu projeto hoje?',
               timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
             }
           ]);

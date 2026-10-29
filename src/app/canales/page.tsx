@@ -37,7 +37,7 @@ export default function CanalesPage() {
   // WebChat states
   const [chatEnabled, setChatEnabled] = useState(true);
   const [primaryColor, setPrimaryColor] = useState('#f20d16');
-  const [welcomeMessage, setWelcomeMessage] = useState('Olá! Sou o assistente virtual da AndradeStudio. Como posso te ajudar hoje?');
+  const [welcomeMessage, setWelcomeMessage] = useState('Olá! Sou o assistente virtual da AndradeStudio AI. Como posso te ajudar hoje?');
   const [botName, setBotName] = useState('Andrade AI');
   const [savingWebChat, setSavingWebChat] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
