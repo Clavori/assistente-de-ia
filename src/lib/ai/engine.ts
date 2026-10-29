@@ -50,7 +50,7 @@ export async function buildSystemPrompt(extraToolContext?: string): Promise<stri
   const servicesList = services
     .map(
       (s) =>
-        `- ${s.name}: R$ ${Number(s.price || 0).toFixed(2)}${s.priceFrom ? ' (a partir de)' : ''} | Duração: ${s.durationMinutes} min. Descrição: ${s.description || 'N/A'}`
+        `- ${s.name} | Duração da reunião: ${s.durationMinutes} min. Descrição: ${s.description || 'N/A'}`
     )
     .join('\n');
 
@@ -82,7 +82,7 @@ COMO VOCÊ DEVE CONVERSAR (ESTILO HUMANO REAL NO WHATSAPP):
 2. Responda DIRETAMENTE ao que o cliente acabou de falar! Se ele contar o ramo dele (ex: barbearia, clínica, loja, advocacia), comente especificamente sobre como podemos ajudar o negócio dele. Se ele fizer uma pergunta específica, responda na mosca sem enrolação.
 3. Escreva mensagens curtas, leves e fluidas (1 a 3 parágrafos curtos), como um consultor humano digitando no WhatsApp. Evite listas gigantescas se o cliente não pediu um catálogo.
 4. No primeiro "oi" / "olá" / "bom dia", dê boas-vindas em nome da *AndradeStudio AI* 🚀 e pergunte de forma amigável como pode ajudar hoje. Nos turnos seguintes da conversa, NÃO repita "Olá! Seja bem-vindo à AndradeStudio AI" — apenas continue o papo naturalmente!
-5. Só cite preços se o cliente perguntar valores ou pedir orçamento.
+5. NUNCA informe preços ou valores em reais no chat. Se o cliente perguntar preço/valor/orçamento, explique de forma natural que cada projeto na *AndradeStudio AI* é orçado sob medida de acordo com o que o cliente realmente precisa, e pergunte alguns detalhes do projeto ou convide para uma reunião rápida de diagnóstico gratuita.
 6. Use negrito do WhatsApp (*texto*) com moderação apenas para destacar pontos importantes.
 
 INSTRUÇÕES DO NEGÓCIO:
@@ -147,19 +147,18 @@ async function buildCompactHumanPrompt(extraToolContext?: string): Promise<strin
 
   return `Você é ${assistantName}, consultor humano oficial da agência *${businessName}* no WhatsApp.
 O que a *${businessName}* faz:
-- *Agente de IA para WhatsApp & Site (Atendimento e Agendamento 24/7)*: a partir de R$ 2.400
-- *Sites & Landing Pages Premium de Alta Conversão*: a partir de R$ 1.950 (entrega em 5 a 10 dias úteis)
-- *Aplicativos Web/SaaS Sob Medida*: a partir de R$ 4.900
-- *Aplicativos Mobile (iOS e Android)*: a partir de R$ 7.800
-- *Automações Empresariais (n8n, Make, CRM, Google Sheets)*: a partir de R$ 1.800
-- *Reunião de Diagnóstico e Demonstração Online (30 min)*: 100% Gratuita!
-- Pagamento: PIX com desconto, parcelado por etapas ou até 12x no cartão. Garantia de 30 dias + Contrato NDA.
+- *Agentes de IA para WhatsApp & Site* (Atendimento automático, qualificação de clientes e agendamento 24/7)
+- *Sites & Landing Pages Premium de Alta Conversão* (Design moderno, rápido, otimizado para Google e vendas)
+- *Aplicativos Web/SaaS e Mobile (iOS e Android) Sob Medida*
+- *Automações Empresariais (n8n, Make, CRM, Google Sheets, Gmail)*
+- *Reunião de Diagnóstico e Demonstração Online*: Gratuita!
 
 Regras de ouro da sua conversa:
 1. Converse exatamente como um consultor humano brasileiro, simpático, direto e natural no WhatsApp.
 2. Responda especificamente ao que o cliente acabou de dizer (mencione o negócio dele, a dúvida dele ou o comentário que ele fez).
-3. Use mensagens curtas (1 a 3 parágrafos curtos). Só fale preços se o cliente perguntar valores.
-4. No primeiro "oi/olá", dê boas-vindas à *${businessName}* 🚀. Nas mensagens seguintes da conversa, NÃO repita boas-vindas, apenas continue o papo naturalmente!
+3. Use mensagens curtas (1 a 3 parágrafos curtos).
+4. NUNCA passe valores ou preços fixos em reais no chat! Se o cliente perguntar preço/valor/quanto custa, explique com simpatia que o valor é definido sob medida conforme a necessidade do projeto dele, pergunte como funciona a operação dele hoje ou convide para um bate-papo rápido de diagnóstico gratuito para passarmos o orçamento certinho.
+5. No primeiro "oi/olá", dê boas-vindas à *${businessName}* 🚀. Nas mensagens seguintes da conversa, NÃO repita boas-vindas, apenas continue o papo naturalmente!
 ${extraToolContext ? `\nInformação importante do sistema neste turno: ${extraToolContext}` : ''}`;
 }
 
@@ -468,7 +467,7 @@ export async function runAssistantEngine(params: {
   const fallbackText =
     rawMessages.length <= 1
       ? `Olá! Seja muito bem-vindo(a) à *AndradeStudio AI* 🚀\n\nSou o consultor virtual da agência. Criamos *Sites Premium*, *Aplicativos Sob Medida* e *Agentes de IA para WhatsApp & Web*.\n\nMe conta: qual projeto ou ideia você quer tirar do papel hoje?`
-      : `Perfeito! Na *AndradeStudio AI* nós personalizamos toda a solução para o cenário do seu negócio — desde sites e aplicativos até agentes de IA que atendem e agendam sozinhos no WhatsApp.\n\nComo posso te ajudar nesse próximo passo? Quer ver como funciona na prática ou prefere agendar um bate-papo rápido?`;
+      : `Perfeito! Na *AndradeStudio AI* nós desenvolvemos cada projeto sob medida para o cenário do seu negócio — desde sites e aplicativos até agentes de IA que atendem e agendam sozinhos no WhatsApp.\n\nMe conta um pouco mais sobre o que você precisa ou, se preferir, podemos agendar um bate-papo rápido para montarmos seu orçamento!`;
 
   return {
     text: fallbackText,

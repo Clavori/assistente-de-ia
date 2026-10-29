@@ -215,9 +215,7 @@ export async function executeTool(
             nome: s.name,
             descricao: s.description,
             duracaoMinutos: s.durationMinutes,
-            preco: s.price ? Number(s.price) : 0,
-            precoAPartirDe: s.priceFrom,
-            requerAvaliacao: s.requiresTriage
+            orcamento: 'Orçamento personalizado sob medida (Reunião de diagnóstico gratuita)'
           })),
           summary,
           simulated: false,
