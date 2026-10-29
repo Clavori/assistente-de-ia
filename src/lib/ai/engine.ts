@@ -134,22 +134,52 @@ async function callOpenRouter(
 }
 
 /**
+ * Build a concise, fast system prompt for natural human WhatsApp conversation
+ */
+async function buildCompactHumanPrompt(extraToolContext?: string): Promise<string> {
+  const [business, config] = await Promise.all([
+    prisma.business.findFirst(),
+    prisma.assistantConfig.findFirst()
+  ]);
+
+  const businessName = business?.name || 'AndradeStudio AI';
+  const assistantName = config?.name || 'Andrade AI';
+
+  return `Você é ${assistantName}, consultor humano oficial da agência *${businessName}* no WhatsApp.
+O que a *${businessName}* faz:
+- *Agente de IA para WhatsApp & Site (Atendimento e Agendamento 24/7)*: a partir de R$ 2.400
+- *Sites & Landing Pages Premium de Alta Conversão*: a partir de R$ 1.950 (entrega em 5 a 10 dias úteis)
+- *Aplicativos Web/SaaS Sob Medida*: a partir de R$ 4.900
+- *Aplicativos Mobile (iOS e Android)*: a partir de R$ 7.800
+- *Automações Empresariais (n8n, Make, CRM, Google Sheets)*: a partir de R$ 1.800
+- *Reunião de Diagnóstico e Demonstração Online (30 min)*: 100% Gratuita!
+- Pagamento: PIX com desconto, parcelado por etapas ou até 12x no cartão. Garantia de 30 dias + Contrato NDA.
+
+Regras de ouro da sua conversa:
+1. Converse exatamente como um consultor humano brasileiro, simpático, direto e natural no WhatsApp.
+2. Responda especificamente ao que o cliente acabou de dizer (mencione o negócio dele, a dúvida dele ou o comentário que ele fez).
+3. Use mensagens curtas (1 a 3 parágrafos curtos). Só fale preços se o cliente perguntar valores.
+4. No primeiro "oi/olá", dê boas-vindas à *${businessName}* 🚀. Nas mensagens seguintes da conversa, NÃO repita boas-vindas, apenas continue o papo naturalmente!
+${extraToolContext ? `\nInformação importante do sistema neste turno: ${extraToolContext}` : ''}`;
+}
+
+/**
  * Call the built-in free OpenAI-compatible LLM so the assistant always converses like a real human
  * even when no external OPENROUTER_API_KEY is configured.
  */
 async function callBuiltInHumanLLM(messages: ChatMessage[]): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 14000);
+    const timeout = setTimeout(() => controller.abort(), 18000);
 
     const response = await fetch(FREE_OPENAI_COMPAT_URL, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'openai',
-        temperature: 0.6,
         messages: messages.map((m) => ({
           role: m.role === 'tool' ? 'system' : m.role,
           content: m.content || ''
@@ -164,7 +194,6 @@ async function callBuiltInHumanLLM(messages: ChatMessage[]): Promise<string | nu
     const data = await response.json();
     const reply = data?.choices?.[0]?.message?.content;
     if (typeof reply === 'string' && reply.trim().length > 0) {
-      // Normalize **bold** to WhatsApp *bold*
       return reply.trim().replace(/\*\*([^*]+)\*\*/g, '*$1*');
     }
     return null;
@@ -415,10 +444,10 @@ export async function runAssistantEngine(params: {
   }
 
   // Call the real conversational LLM with full conversation history!
-  const systemPrompt = await buildSystemPrompt(toolContextForLLM);
+  const compactPrompt = await buildCompactHumanPrompt(toolContextForLLM);
   const llmMessages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt },
-    ...rawMessages.slice(-10).map((m) => ({
+    { role: 'system', content: compactPrompt },
+    ...rawMessages.slice(-8).map((m) => ({
       role: m.role,
       content: m.content
     }))
