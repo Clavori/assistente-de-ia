@@ -470,11 +470,16 @@ export async function startWhatsAppSession(forceClean = false): Promise<WAState>
           }));
           historyForAI.push({ role: 'user', content: text });
 
+          // Show "digitando..." on customer's WhatsApp while generating human reply
+          await sock.sendPresenceUpdate('composing', remoteJid).catch(() => {});
+
           const aiResult = await runAssistantEngine({
             messages: historyForAI,
             channel: 'whatsapp',
             conversationId: conversation.id
           });
+
+          await sock.sendPresenceUpdate('paused', remoteJid).catch(() => {});
 
           try {
             await sock.sendMessage(remoteJid, { text: aiResult.text });
