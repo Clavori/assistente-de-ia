@@ -3,8 +3,7 @@ import {
   getWhatsAppStatus,
   startWhatsAppSession,
   disconnectWhatsAppSession,
-  requestWhatsAppPairingCode,
-  markWhatsAppConnected
+  requestWhatsAppPairingCode
 } from '@/lib/whatsapp/manager';
 
 export const dynamic = 'force-dynamic';
@@ -12,15 +11,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const keepConnected = url.searchParams.get('keepConnected') === 'true';
-    const connectedPhone = url.searchParams.get('connectedPhone');
+    const heartbeat =
+      url.searchParams.get('heartbeat') === '1' ||
+      url.searchParams.get('keepConnected') === 'true';
 
-    if (keepConnected) {
-      const data = await markWhatsAppConnected(connectedPhone || undefined);
-      return NextResponse.json(data);
-    }
-
-    const data = await getWhatsAppStatus();
+    const data = await getWhatsAppStatus({ heartbeat });
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -31,14 +26,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { action, phone } = body;
-
-    if (action === 'sync_connected') {
-      const status = await markWhatsAppConnected(phone || undefined);
-      return NextResponse.json({
-        success: true,
-        ...status
-      });
-    }
 
     if (action === 'disconnect') {
       const status = await disconnectWhatsAppSession();

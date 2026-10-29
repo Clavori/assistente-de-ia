@@ -43,8 +43,7 @@ export async function GET() {
       getWhatsAppStatus().catch(() => null)
     ]);
 
-    const isConnected =
-      liveWa?.status === 'connected' || waConn?.status === 'connected';
+    const realStatus = liveWa?.status || waConn?.status || 'disconnected';
 
     return NextResponse.json({
       success: true,
@@ -56,11 +55,11 @@ export async function GET() {
         avgResponseTime: '1.2s'
       },
       recentActions,
-      whatsappStatus: isConnected
-        ? 'connected'
-        : liveWa?.status || waConn?.status || 'disconnected',
+      whatsappStatus: realStatus,
       whatsappPhone:
-        liveWa?.connectedNumber || waConn?.connectedNumber || null
+        realStatus === 'connected'
+          ? liveWa?.connectedNumber || waConn?.connectedNumber || null
+          : null
     });
   } catch (err: any) {
     console.error('Stats error details:', err);
